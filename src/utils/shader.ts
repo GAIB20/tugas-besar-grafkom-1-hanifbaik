@@ -1,24 +1,18 @@
-function createShader (
-  gl: WebGLRenderingContext,
-  type: number,
-  source: string
-): WebGLShader | null {
+export default function createShader (gl: WebGLRenderingContext, type: number, source: string): WebGLShader {
   const shader = gl.createShader(type)
   if (shader === null) {
-    return null
+    throw Error('Shader not created')
   }
-
   gl.shaderSource(shader, source)
   gl.compileShader(shader)
-
   const success = gl.getShaderParameter(shader, gl.COMPILE_STATUS) as boolean
-  if (!success) {
-    gl.deleteShader(shader)
 
-    throw Error('Failed to create shader')
+  if (success) {
+    return shader
   }
 
-  return shader
-}
+  console.log(gl.getShaderInfoLog(shader))
+  gl.deleteShader(shader)
 
-export default createShader
+  throw Error('Shader not created')
+}
