@@ -1,5 +1,10 @@
 import createShader from '@/utils/shader'
 import createProgram from '@/utils/program'
+import Polygon from './models/Polygon'
+import Vertex from './primitives/Vertex'
+import Line from './models/Line'
+import Square from './models/Square'
+import Rectangle from './models/Rectangle'
 
 const canvasElmt = document.getElementById('webgl-canvas')
 if (!canvasElmt) {
@@ -48,4 +53,34 @@ gl.clear(gl.COLOR_BUFFER_BIT)
 gl.useProgram(program)
 gl.uniform2f(resUniLoc, gl.canvas.width, gl.canvas.height)
 
-// TODO: render models
+// TODO: render models based on user interaction & create constraint
+const line = new Line()
+line.addVertex(new Vertex([150, 800], [1, 0, 0.7, 1]))
+line.addVertex(new Vertex([200, 1000], [0, 1, 0, 1]))
+
+const square = new Square()
+square.addVertex(new Vertex([300, 800], [0, 1, 0, 0.5]))
+square.addVertex(new Vertex([300, 1000], [0, 0, 1, 0.5]))
+square.addVertex(new Vertex([500, 1000], [1, 0, 0, 0.5]))
+square.addVertex(new Vertex([500, 800], [0, 0, 0.5, 0.5]))
+square.addVertex(new Vertex([300, 800], [0, 1, 0, 0.5]))
+
+const rectangle = new Rectangle()
+rectangle.addVertex(new Vertex([600, 800], [0, 1, 0, 0.5]))
+rectangle.addVertex(new Vertex([600, 1000], [0, 0, 0.5, 0.5]))
+rectangle.addVertex(new Vertex([900, 1000], [1, 0, 0, 0.5]))
+rectangle.addVertex(new Vertex([900, 800], [0, 0, 0.5, 0.5]))
+rectangle.addVertex(new Vertex([600, 800], [0, 1, 0, 0.5]))
+
+const polygon = new Polygon()
+polygon.addVertex(new Vertex([1000, 800], [1, 0, 0, 0.5]))
+polygon.addVertex(new Vertex([1010, 900], [0, 0, 1, 0.5]))
+polygon.addVertex(new Vertex([1120, 1000], [0, 0, 1, 0.5]))
+polygon.addVertex(new Vertex([1450, 900], [0, 1, 0, 0.5]))
+polygon.addVertex(new Vertex([1500, 820], [0, 1, 0.5, 0.5]))
+polygon.addVertex(new Vertex([1000, 800], [1, 0, 0, 0.5]))
+
+const models = [line, square, rectangle, polygon]
+models.forEach((el) => {
+  el.render(gl, posBuffer, posAttrLoc, colorBuffer, colorAttrLoc)
+})
