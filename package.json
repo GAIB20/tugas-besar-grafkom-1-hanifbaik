@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "npx webpack",
-    "dev": "nodemon --exec 'npm run build' --watch src --ext ts --delay 3"
+    "dev": "nodemon --exec 'npm run build' --watch src --ext ts"
   },
   "author": "",
   "license": "ISC",
