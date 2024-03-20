@@ -1,8 +1,14 @@
+import { flatten, type Matrix, matrix, multiply, number, squeeze } from 'mathjs'
 import type Vertex from './Vertex'
 
 export default abstract class Model {
   public id: string
   public vertexList: Vertex[] = [] // list of all vertices that NEED to be drawn
+  public transformMat: Matrix = matrix([
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1]
+  ])
 
   constructor (id: string) {
     this.id = id
@@ -16,13 +22,37 @@ export default abstract class Model {
     return this.vertexList.flatMap((el) => el.color)
   }
 
+  getTransformMatArray (): number[] {
+    const flattened = flatten(this.transformMat)
+    const arr: number[] = []
+    flattened.forEach((el) => { arr.push(el as number) })
+
+    return arr
+  }
+
   abstract getDrawMethod (gl: WebGLRenderingContext): number
 
   addVertex (vertex: Vertex): void {
     this.vertexList.push(vertex)
   }
 
-  render (gl: WebGLRenderingContext, posBuffer: WebGLBuffer, posAttrLoc: number, colorBuffer: WebGLBuffer, colorAttrLoc: number): void {
+  translate (tx: number, ty: number): void {
+    const translateMat = [
+      [1, 0, 0],
+      [0, 1, 0],
+      [tx, ty, 1]
+    ]
+    this.transformMat = multiply(this.transformMat, translateMat)
+  }
+
+  render (
+    gl: WebGLRenderingContext,
+    posBuffer: WebGLBuffer,
+    posAttrLoc: number,
+    colorBuffer: WebGLBuffer,
+    colorAttrLoc: number,
+    matUniLoc: WebGLUniformLocation
+  ): void {
     // position
     gl.enableVertexAttribArray(posAttrLoc)
     gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer)
@@ -43,6 +73,8 @@ export default abstract class Model {
       new Float32Array(this.getColorArray()),
       gl.STATIC_DRAW
     )
+
+    gl.uniformMatrix3fv(matUniLoc, false, this.getTransformMatArray())
 
     gl.drawArrays(this.getDrawMethod(gl), 0, this.vertexList.length)
   }

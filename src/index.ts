@@ -30,7 +30,12 @@ const program = createProgram(gl, vertexShader, fragmentShader)
 
 const posAttrLoc = gl.getAttribLocation(program, 'a_position')
 const colorAttrLoc = gl.getAttribLocation(program, 'a_color')
+const matUniLoc = gl.getUniformLocation(program, 'u_matrix')
 const resUniLoc = gl.getUniformLocation(program, 'u_resolution')
+
+if (!matUniLoc || !resUniLoc) {
+  throw Error('Location not found')
+}
 
 const posBuffer = gl.createBuffer()
 const colorBuffer = gl.createBuffer()
@@ -79,8 +84,9 @@ polygon.addVertex(new Vertex([1120, 1000], [0, 0, 1, 0.5]))
 polygon.addVertex(new Vertex([1450, 900], [0, 1, 0, 0.5]))
 polygon.addVertex(new Vertex([1500, 820], [0, 1, 0.5, 0.5]))
 polygon.addVertex(new Vertex([1000, 800], [1, 0, 0, 0.5]))
+polygon.translate(0.3, 0.3)
 
 const models = [line, square, rectangle, polygon]
 models.forEach((el) => {
-  el.render(gl, posBuffer, posAttrLoc, colorBuffer, colorAttrLoc)
+  el.render(gl, posBuffer, posAttrLoc, colorBuffer, colorAttrLoc, matUniLoc)
 })
