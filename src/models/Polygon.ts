@@ -35,6 +35,11 @@ export default class Polygon extends Model {
     }
   }
 
+  deleteVertex (vertex: Vertex): void {
+    this.vertexList = this.vertexList.filter((v) => !v.isEq(vertex))
+    this.convexHull()
+  }
+
   getDrawMethod (gl: WebGLRenderingContext): number {
     if (this.vertexList.length === 2) return gl.POINTS
     if (this.vertexList.length === 3) return gl.LINES
