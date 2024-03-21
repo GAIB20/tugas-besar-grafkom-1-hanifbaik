@@ -1,4 +1,4 @@
-import { flatten, type Matrix, matrix, multiply, number, squeeze } from 'mathjs'
+import { flatten, type Matrix, matrix, multiply } from 'mathjs'
 import type Vertex from './Vertex'
 
 export default abstract class Model {
@@ -24,10 +24,7 @@ export default abstract class Model {
 
   getTransformMatArray (): number[] {
     const flattened = flatten(this.transformMat)
-    const arr: number[] = []
-    flattened.forEach((el) => { arr.push(el as number) })
-
-    return arr
+    return flattened.valueOf() as number[]
   }
 
   abstract getDrawMethod (gl: WebGLRenderingContext): number
