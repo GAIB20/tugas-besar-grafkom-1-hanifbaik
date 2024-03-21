@@ -6,6 +6,16 @@ import Line from './models/Line'
 import Square from './models/Square'
 import Rectangle from './models/Rectangle'
 
+enum CursorType {
+  SELECT = 0,
+  LINE = 1,
+  SQUARE = 2,
+  RECTANGLE = 3,
+  POLYGON = 4,  
+}
+
+let cursorType : CursorType = CursorType.LINE;
+let isDrawing : boolean = false;
 const canvasElmt = document.getElementById('webgl-canvas')
 if (!canvasElmt) {
   throw Error('Canvas not found')
@@ -95,11 +105,65 @@ polygon.addVertex(new Vertex([905, 150], [0, 0, 1, 0.5]))
 const clickPolygon = new Polygon()
 const models = [line, square, rectangle, polygon, clickPolygon]
 
+// TODO: implement for other shapes (remove if not used)
 canvas.addEventListener('mousedown', (e) => {
   const rect = canvas.getBoundingClientRect()
   const x = e.clientX
   const y = rect.bottom - e.clientY
-  models[4].addVertex(new Vertex([x, y]))
+  switch (cursorType) {
+    case CursorType.LINE:
+      break
+    case CursorType.SQUARE:
+      break
+    case CursorType.RECTANGLE:
+      console.log('rectangle start draw');
+      if (!isDrawing) {
+        isDrawing = true
+        models.push(new Rectangle(new Vertex([x, y])))
+        console.log(models.length)
+      }
+      break
+    case CursorType.POLYGON:
+      models[4].addVertex(new Vertex([x, y]))
+      break
+  }
+})
+
+// TODO: implement for other shapes (remove if not used)
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect()
+  const x = e.clientX
+  const y = rect.bottom - e.clientY
+  if (isDrawing) {
+    switch (cursorType) {
+      case CursorType.LINE:
+        break
+      case CursorType.SQUARE:
+        break
+      case CursorType.RECTANGLE:
+        const rectangle = models[models.length - 1] as Rectangle
+        rectangle.updateVerticesWhenDrawing(x, y)
+        break
+      case CursorType.POLYGON:
+        break
+    }
+  }
+})
+
+// TODO: implement for other shapes (remove if not used)
+canvas.addEventListener('mouseup', (e) => {
+  switch (cursorType) {
+    case CursorType.LINE:
+      break
+    case CursorType.SQUARE:
+      break
+    case CursorType.RECTANGLE:
+      console.log('rectangle end draw')
+      isDrawing = false
+      break
+    case CursorType.POLYGON:
+      break
+  }
 })
 
 export const renderAll = (): void => {
@@ -129,6 +193,38 @@ const transformBtn2 = document.getElementById('transform-btn-2')
 if (transformBtn2) {
   transformBtn2.addEventListener('click', () => {
     models[4].translate(-0.1, -0.1)
+  })
+}
+
+
+// Buttons
+const lineBtn = document.getElementById('line-btn')
+if (lineBtn) {
+  lineBtn.addEventListener('click', () => {
+    cursorType = CursorType.LINE
+  })
+}
+
+const squareBtn = document.getElementById('square-btn')
+if (squareBtn) {
+  squareBtn.addEventListener('click', () => {
+    cursorType = CursorType.SQUARE
+  })
+}
+
+const rectangleBtn = document.getElementById('rectangle-btn')
+if (rectangleBtn) {
+  rectangleBtn.addEventListener('click', () => {
+    console.log('rectangle')
+    cursorType = CursorType.RECTANGLE
+  })
+}
+
+const polygonBtn = document.getElementById('polygon-btn')
+if (polygonBtn) {
+  polygonBtn.addEventListener('click', () => {
+    console.log('polygon')
+    cursorType = CursorType.POLYGON
   })
 }
 
