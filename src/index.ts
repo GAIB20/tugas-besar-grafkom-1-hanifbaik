@@ -5,20 +5,27 @@ import Vertex from './primitives/Vertex'
 import Line from './models/Line'
 import Square from './models/Square'
 import Rectangle from './models/Rectangle'
-import Model from './primitives/Model'
+import type Model from './primitives/Model'
 
 enum CursorType {
   SELECT = 0,
   LINE = 1,
   SQUARE = 2,
   RECTANGLE = 3,
-  POLYGON = 4,  
+  POLYGON = 4,
 }
 
-let cursorType : CursorType = CursorType.LINE;
-let isDrawing : boolean = false;
-let selectedModel : Model | Line | Square | Rectangle | Polygon | undefined | null;
-let selectedVertex : Vertex | undefined | null;
+let cursorType: CursorType = CursorType.LINE
+let isDrawing: boolean = false
+let selectedModel:
+| Model
+| Line
+| Square
+| Rectangle
+| Polygon
+| undefined
+| null
+let selectedVertex: Vertex | undefined | null
 
 const canvasElmt = document.getElementById('webgl-canvas')
 if (!canvasElmt) {
@@ -127,15 +134,16 @@ if (modelDropdown) {
 
 // Change selected model using dropdown
 modelDropdown?.addEventListener('change', (e) => {
-  selectedModel = models.find((model) => model.id === (e.target as HTMLSelectElement).value)
+  selectedModel = models.find(
+    (model) => model.id === (e.target as HTMLSelectElement).value
+  )
   selectedVertex = null
   if (vertexDropdown && selectedModel) {
-    
     // Reset vertex dropdown
     vertexDropdown.innerHTML = ''
-    
+
     // Initialize vertex dropdown based on selected model
-    let first : boolean = true
+    let first: boolean = true
     selectedModel.vertexList.forEach((vertex) => {
       if (vertex.id !== selectedModel?.vertexList[0].id || first) {
         const option = document.createElement('option')
@@ -153,7 +161,9 @@ modelDropdown?.addEventListener('change', (e) => {
 
 // Change selected vertex using dropdown
 vertexDropdown?.addEventListener('change', (e) => {
-  selectedVertex = selectedModel?.vertexList.find((vertex) => vertex.id === (e.target as HTMLSelectElement).value)
+  selectedVertex = selectedModel?.vertexList.find(
+    (vertex) => vertex.id === (e.target as HTMLSelectElement).value
+  )
 })
 
 // TODO: implement for other shapes (remove if not used)
@@ -163,15 +173,30 @@ canvas.addEventListener('mousedown', (e) => {
   const y = rect.bottom - e.clientY
   switch (cursorType) {
     case CursorType.LINE:
+      if (!isDrawing) {
+        isDrawing = true
+        models.push(new Line(new Vertex([x, y])))
+        modelDropdown?.appendChild(
+          new Option(models[models.length - 1].id, models[models.length - 1].id)
+        )
+      }
       break
     case CursorType.SQUARE:
+      if (!isDrawing) {
+        isDrawing = true
+        models.push(new Square(new Vertex([x, y])))
+        modelDropdown?.appendChild(
+          new Option(models[models.length - 1].id, models[models.length - 1].id)
+        )
+      }
       break
     case CursorType.RECTANGLE:
-      console.log('rectangle start draw');
       if (!isDrawing) {
         isDrawing = true
         models.push(new Rectangle(new Vertex([x, y])))
-        modelDropdown?.appendChild(new Option(models[models.length - 1].id, models[models.length - 1].id))
+        modelDropdown?.appendChild(
+          new Option(models[models.length - 1].id, models[models.length - 1].id)
+        )
       }
       break
     case CursorType.POLYGON:
@@ -187,14 +212,21 @@ canvas.addEventListener('mousemove', (e) => {
   const y = rect.bottom - e.clientY
   if (isDrawing) {
     switch (cursorType) {
-      case CursorType.LINE:
+      case CursorType.LINE: {
+        const line = models[models.length - 1] as Line
+        line.updateVerticesWhenDrawing(x, y)
         break
-      case CursorType.SQUARE:
+      }
+      case CursorType.SQUARE: {
+        const square = models[models.length - 1] as Square
+        square.updateVerticesWhenDrawing(x, y)
         break
-      case CursorType.RECTANGLE:
+      }
+      case CursorType.RECTANGLE: {
         const rectangle = models[models.length - 1] as Rectangle
         rectangle.updateVerticesWhenDrawing(x, y)
         break
+      }
       case CursorType.POLYGON:
         break
     }
@@ -205,11 +237,12 @@ canvas.addEventListener('mousemove', (e) => {
 canvas.addEventListener('mouseup', (e) => {
   switch (cursorType) {
     case CursorType.LINE:
+      isDrawing = false
       break
     case CursorType.SQUARE:
+      isDrawing = false
       break
     case CursorType.RECTANGLE:
-      console.log('rectangle end draw')
       isDrawing = false
       break
     case CursorType.POLYGON:
@@ -221,12 +254,14 @@ export const renderAll = (): void => {
   gl.clear(gl.COLOR_BUFFER_BIT)
 
   models.forEach((model) => {
-    model.render(gl,
+    model.render(
+      gl,
       posBuffer,
       posAttrLoc,
       colorBuffer,
       colorAttrLoc,
-      matUniLoc)
+      matUniLoc
+    )
   })
 
   window.requestAnimationFrame(renderAll)
@@ -246,7 +281,6 @@ if (transformBtn2) {
     models[4].translate(-0.1, -0.1)
   })
 }
-
 
 // Buttons
 const lineBtn = document.getElementById('line-btn')
@@ -290,10 +324,10 @@ const colorPicker = document.getElementById('color-picker')
 if (colorPicker) {
   colorPicker.addEventListener('input', (e) => {
     // Parse hex color string to normalized RGB
-    let hexColor = (e.target as HTMLInputElement).value.replace('#', '')
-    let normR = parseInt(hexColor.substring(0, 2), 16) / 255
-    let normG = parseInt(hexColor.substring(2, 4), 16) / 255
-    let normB = parseInt(hexColor.substring(4, 6), 16) / 255
+    const hexColor = (e.target as HTMLInputElement).value.replace('#', '')
+    const normR = parseInt(hexColor.substring(0, 2), 16) / 255
+    const normG = parseInt(hexColor.substring(2, 4), 16) / 255
+    const normB = parseInt(hexColor.substring(4, 6), 16) / 255
 
     if (selectedVertex) {
       // Set color of a vertex if a vertex is selected

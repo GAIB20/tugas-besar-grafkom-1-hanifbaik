@@ -34,7 +34,7 @@ export default class Rectangle extends Model {
     this.vertexRef = vertex
   }
 
-  updateVerticesWhenDrawing(x: number, y: number): void {
+  updateVerticesWhenDrawing (x: number, y: number): void {
     this.vertexList = [
       this.vertexRef,
       new Vertex([this.vertexRef.coord[0], y]),
