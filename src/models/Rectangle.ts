@@ -42,5 +42,7 @@ export default class Rectangle extends Model {
       new Vertex([x, this.vertexRef.coord[1]]),
       this.vertexRef
     ]
+    this.setHeight(y - this.vertexRef.coord[1])
+    this.setWidth(x - this.vertexRef.coord[0])
   }
 }
