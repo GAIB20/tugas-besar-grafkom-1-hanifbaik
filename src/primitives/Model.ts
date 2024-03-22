@@ -1,5 +1,5 @@
 import { flatten, type Matrix, matrix, multiply } from 'mathjs'
-import type Vertex from './Vertex'
+import Vertex from './Vertex'
 
 export default abstract class Model {
   public id: string
@@ -40,6 +40,37 @@ export default abstract class Model {
       [tx, ty, 1]
     ]
     this.transformMat = multiply(this.transformMat, translateMat)
+  }
+
+  //! Potentially broke if rotation is added
+  updateXTranslate (tx: number): void {
+    this.transformMat.set([2, 0], tx)
+  }
+
+  updateYTranslate (ty: number): void {
+    this.transformMat.set([2, 1], ty)
+  }
+
+  resetXTranslate (canvasWidth: number): void {
+    this.vertexList = this.vertexList.map((vertex) => {
+      const clipSpaceX = vertex.coord[0] * 2.0 / canvasWidth - 1.0
+      const newClipSpaceX = clipSpaceX + this.transformMat.get([2, 0])
+      const newX = (newClipSpaceX + 1.0) * canvasWidth / 2.0
+
+      return new Vertex([newX, vertex.coord[1]])
+    })
+    this.transformMat.set([2, 0], 0)
+  }
+
+  resetYTranslate (canvasHeight: number): void {
+    this.vertexList = this.vertexList.map((vertex) => {
+      const clipSpaceY = vertex.coord[1] * 2.0 / canvasHeight - 1.0
+      const newClipSpaceY = clipSpaceY + this.transformMat.get([2, 1])
+      const newY = (newClipSpaceY + 1.0) * canvasHeight / 2.0
+
+      return new Vertex([vertex.coord[0], newY])
+    })
+    this.transformMat.set([2, 1], 0)
   }
 
   render (

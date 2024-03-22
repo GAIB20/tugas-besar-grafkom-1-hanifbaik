@@ -73,7 +73,7 @@ if (!posBuffer || !colorBuffer) {
 
 const width = canvas.clientWidth
 const height = canvas.clientHeight
-
+console.log(width)
 canvas.width = width
 canvas.height = height
 
@@ -122,6 +122,9 @@ selectedModel = models[0]
 const modelDropdown = document.getElementById('model-select')
 const vertexDropdown = document.getElementById('vertex-select')
 
+const translateXInput = document.getElementById('translate-x-input') as HTMLInputElement
+const translateYInput = document.getElementById('translate-y-input') as HTMLInputElement
+
 // Initialize model dropdown
 if (modelDropdown) {
   models.forEach((model) => {
@@ -157,6 +160,55 @@ modelDropdown?.addEventListener('change', (e) => {
     // Add all vertex option
     vertexDropdown.appendChild(new Option('All Vertex', undefined))
   }
+
+  if (selectedModel) {
+    const selectedVertices = selectedModel?.vertexList
+    const selectedXClipSpace = selectedVertices[0].coord[0] * 2.0 / canvas.width - 1.0
+    const selectedYClipSpace = selectedVertices[0].coord[1] * 2.0 / canvas.height - 1.0
+
+    translateXInput.min = (-1.0 - selectedXClipSpace).toString()
+    translateXInput.max = (1.0 - selectedXClipSpace).toString()
+    translateXInput.value = selectedXClipSpace.toString()
+
+    translateXInput.addEventListener('input', (e: any) => {
+      selectedModel?.updateXTranslate(parseFloat(e.target.value as string))
+    })
+
+    translateXInput.addEventListener('mouseup', (e: any) => {
+      if (selectedModel) {
+        selectedModel?.resetXTranslate(canvas.width)
+
+        const selectedVertices = selectedModel?.vertexList
+        const selectedXClipSpace = selectedVertices[0].coord[0] * 2.0 / canvas.width - 1.0
+        // const selectedYClipSpace = selectedVertices[0].coord[1] * 2.0 / canvas.height - 1.0
+
+        translateXInput.min = (-1.0 - selectedXClipSpace).toString()
+        translateXInput.max = (1.0 - selectedXClipSpace).toString()
+        translateXInput.value = selectedXClipSpace.toString()
+      }
+    })
+
+    translateYInput.min = (-1.0 - selectedYClipSpace).toString()
+    translateYInput.max = (1.0 - selectedYClipSpace).toString()
+    translateYInput.value = selectedYClipSpace.toString()
+
+    translateYInput.addEventListener('input', (e: any) => {
+      selectedModel?.updateYTranslate(parseFloat(e.target.value as string))
+    })
+
+    translateYInput.addEventListener('mouseup', (e: any) => {
+      if (selectedModel) {
+        selectedModel?.resetYTranslate(canvas.height)
+
+        const selectedVertices = selectedModel?.vertexList
+        const selectedYClipSpace = selectedVertices[0].coord[1] * 2.0 / canvas.height - 1.0
+
+        translateYInput.min = (-1.0 - selectedYClipSpace).toString()
+        translateYInput.max = (1.0 - selectedYClipSpace).toString()
+        translateYInput.value = selectedYClipSpace.toString()
+      }
+    })
+  }
 })
 
 // Change selected vertex using dropdown
@@ -169,7 +221,7 @@ vertexDropdown?.addEventListener('change', (e) => {
 // TODO: implement for other shapes (remove if not used)
 canvas.addEventListener('mousedown', (e) => {
   const rect = canvas.getBoundingClientRect()
-  const x = e.clientX
+  const x = e.clientX - 100
   const y = rect.bottom - e.clientY
   switch (cursorType) {
     case CursorType.LINE:
@@ -208,7 +260,7 @@ canvas.addEventListener('mousedown', (e) => {
 // TODO: implement for other shapes (remove if not used)
 canvas.addEventListener('mousemove', (e) => {
   const rect = canvas.getBoundingClientRect()
-  const x = e.clientX
+  const x = e.clientX - 100
   const y = rect.bottom - e.clientY
   if (isDrawing) {
     switch (cursorType) {
@@ -290,6 +342,21 @@ if (lineBtn) {
   })
 }
 
+const buttonConttainer = document.getElementById('button-container')
+if (buttonConttainer) {
+  buttonConttainer.addEventListener('click', (e) => {
+    Array.from(buttonConttainer.children).forEach(c => {
+      if (c === e.target) {
+        c.classList.add('bg-blue-200')
+        c.classList.remove('hover:bg-slate-200')
+      } else {
+        c.classList.remove('bg-blue-200')
+        c.classList.add('hover:bg-slate-200')
+      }
+    })
+  })
+}
+
 const squareBtn = document.getElementById('square-btn')
 if (squareBtn) {
   squareBtn.addEventListener('click', () => {
@@ -300,7 +367,6 @@ if (squareBtn) {
 const rectangleBtn = document.getElementById('rectangle-btn')
 if (rectangleBtn) {
   rectangleBtn.addEventListener('click', () => {
-    console.log('rectangle')
     cursorType = CursorType.RECTANGLE
   })
 }
@@ -308,7 +374,6 @@ if (rectangleBtn) {
 const polygonBtn = document.getElementById('polygon-btn')
 if (polygonBtn) {
   polygonBtn.addEventListener('click', () => {
-    console.log('polygon')
     cursorType = CursorType.POLYGON
   })
 }
