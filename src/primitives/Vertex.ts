@@ -1,6 +1,8 @@
 export default class Vertex {
+  public id: string
   public coord: number[]
   public color: number[]
+  public static count: number = 1
 
   constructor (coord: number[], color?: number[]) {
     this.coord = coord
@@ -10,6 +12,8 @@ export default class Vertex {
       Math.random(),
       Math.random() * 0.8 + 0.2
     ]
+    this.id = `vertex-${Vertex.count}`
+    Vertex.count++
   }
 
   getSqDistTo (vertex: Vertex): number {

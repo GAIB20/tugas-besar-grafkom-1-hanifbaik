@@ -5,6 +5,7 @@ import Vertex from './primitives/Vertex'
 import Line from './models/Line'
 import Square from './models/Square'
 import Rectangle from './models/Rectangle'
+import Model from './primitives/Model'
 
 enum CursorType {
   SELECT = 0,
@@ -16,6 +17,9 @@ enum CursorType {
 
 let cursorType : CursorType = CursorType.LINE;
 let isDrawing : boolean = false;
+let selectedModel : Model | Line | Square | Rectangle | Polygon | undefined | null;
+let selectedVertex : Vertex | undefined | null;
+
 const canvasElmt = document.getElementById('webgl-canvas')
 if (!canvasElmt) {
   throw Error('Canvas not found')
@@ -105,6 +109,53 @@ polygon.addVertex(new Vertex([905, 150], [0, 0, 1, 0.5]))
 const clickPolygon = new Polygon()
 const models = [line, square, rectangle, polygon, clickPolygon]
 
+// Initialize selected model
+selectedModel = models[0]
+
+const modelDropdown = document.getElementById('model-select')
+const vertexDropdown = document.getElementById('vertex-select')
+
+// Initialize model dropdown
+if (modelDropdown) {
+  models.forEach((model) => {
+    const option = document.createElement('option')
+    option.value = model.id
+    option.text = model.id
+    modelDropdown.appendChild(option)
+  })
+}
+
+// Change selected model using dropdown
+modelDropdown?.addEventListener('change', (e) => {
+  selectedModel = models.find((model) => model.id === (e.target as HTMLSelectElement).value)
+  selectedVertex = null
+  if (vertexDropdown && selectedModel) {
+    
+    // Reset vertex dropdown
+    vertexDropdown.innerHTML = ''
+    
+    // Initialize vertex dropdown based on selected model
+    let first : boolean = true
+    selectedModel.vertexList.forEach((vertex) => {
+      if (vertex.id !== selectedModel?.vertexList[0].id || first) {
+        const option = document.createElement('option')
+        option.value = vertex.id
+        option.text = vertex.id
+        vertexDropdown.appendChild(option)
+      }
+      first = false
+    })
+
+    // Add all vertex option
+    vertexDropdown.appendChild(new Option('All Vertex', undefined))
+  }
+})
+
+// Change selected vertex using dropdown
+vertexDropdown?.addEventListener('change', (e) => {
+  selectedVertex = selectedModel?.vertexList.find((vertex) => vertex.id === (e.target as HTMLSelectElement).value)
+})
+
 // TODO: implement for other shapes (remove if not used)
 canvas.addEventListener('mousedown', (e) => {
   const rect = canvas.getBoundingClientRect()
@@ -120,7 +171,7 @@ canvas.addEventListener('mousedown', (e) => {
       if (!isDrawing) {
         isDrawing = true
         models.push(new Rectangle(new Vertex([x, y])))
-        console.log(models.length)
+        modelDropdown?.appendChild(new Option(models[models.length - 1].id, models[models.length - 1].id))
       }
       break
     case CursorType.POLYGON:
@@ -225,6 +276,34 @@ if (polygonBtn) {
   polygonBtn.addEventListener('click', () => {
     console.log('polygon')
     cursorType = CursorType.POLYGON
+  })
+}
+
+const selectBtn = document.getElementById('select-btn')
+if (selectBtn) {
+  selectBtn.addEventListener('click', () => {
+    cursorType = CursorType.SELECT
+  })
+}
+
+const colorPicker = document.getElementById('color-picker')
+if (colorPicker) {
+  colorPicker.addEventListener('input', (e) => {
+    // Parse hex color string to normalized RGB
+    let hexColor = (e.target as HTMLInputElement).value.replace('#', '')
+    let normR = parseInt(hexColor.substring(0, 2), 16) / 255
+    let normG = parseInt(hexColor.substring(2, 4), 16) / 255
+    let normB = parseInt(hexColor.substring(4, 6), 16) / 255
+
+    if (selectedVertex) {
+      // Set color of a vertex if a vertex is selected
+      selectedVertex.color = [normR, normG, normB, 1]
+    } else {
+      // Set all vertices of a model if no vertex is selected
+      selectedModel?.vertexList.forEach((vertex) => {
+        vertex.color = [normR, normG, normB, 1]
+      })
+    }
   })
 }
 
