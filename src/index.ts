@@ -121,6 +121,7 @@ selectedModel = models[0]
 
 const modelDropdown = document.getElementById('model-select')
 const vertexDropdown = document.getElementById('vertex-select')
+const colorPicker = document.getElementById('color-picker') as HTMLInputElement
 
 const translateXInput = document.getElementById('translate-x-input') as HTMLInputElement
 const translateYInput = document.getElementById('translate-y-input') as HTMLInputElement
@@ -141,25 +142,7 @@ modelDropdown?.addEventListener('change', (e) => {
     (model) => model.id === (e.target as HTMLSelectElement).value
   )
   selectedVertex = null
-  if (vertexDropdown && selectedModel) {
-    // Reset vertex dropdown
-    vertexDropdown.innerHTML = ''
-
-    // Initialize vertex dropdown based on selected model
-    let first: boolean = true
-    selectedModel.vertexList.forEach((vertex) => {
-      if (vertex.id !== selectedModel?.vertexList[0].id || first) {
-        const option = document.createElement('option')
-        option.value = vertex.id
-        option.text = vertex.id
-        vertexDropdown.appendChild(option)
-      }
-      first = false
-    })
-
-    // Add all vertex option
-    vertexDropdown.appendChild(new Option('All Vertex', undefined))
-  }
+  updateVertexDropdown()
 
   if (selectedModel) {
     const selectedVertices = selectedModel?.vertexList
@@ -185,6 +168,7 @@ modelDropdown?.addEventListener('change', (e) => {
         translateXInput.min = (-1.0 - selectedXClipSpace).toString()
         translateXInput.max = (1.0 - selectedXClipSpace).toString()
         translateXInput.value = selectedXClipSpace.toString()
+        updateVertexDropdown()
       }
     })
 
@@ -206,17 +190,76 @@ modelDropdown?.addEventListener('change', (e) => {
         translateYInput.min = (-1.0 - selectedYClipSpace).toString()
         translateYInput.max = (1.0 - selectedYClipSpace).toString()
         translateYInput.value = selectedYClipSpace.toString()
+        updateVertexDropdown()
       }
     })
   }
 })
+
+if (colorPicker) {
+  colorPicker.addEventListener('input', (e) => {
+    // Parse hex color string to normalized RGB
+    const hexColor = (e.target as HTMLInputElement).value.replace('#', '')
+    const normR = parseInt(hexColor.substring(0, 2), 16) / 255
+    const normG = parseInt(hexColor.substring(2, 4), 16) / 255
+    const normB = parseInt(hexColor.substring(4, 6), 16) / 255
+
+    if (selectedVertex) {
+      // Set color of a vertex if a vertex is selected
+      selectedVertex.color = [normR, normG, normB, 1]
+    } else {
+      // Set all vertices of a model if no vertex is selected
+      selectedModel?.vertexList.forEach((vertex) => {
+        vertex.color = [normR, normG, normB, 1]
+      })
+    }
+  })
+}
 
 // Change selected vertex using dropdown
 vertexDropdown?.addEventListener('change', (e) => {
   selectedVertex = selectedModel?.vertexList.find(
     (vertex) => vertex.id === (e.target as HTMLSelectElement).value
   )
+  adjustColorPicker()
 })
+
+function adjustColorPicker() : void {
+  if (selectedVertex && colorPicker) {
+    const [r, g, b] = selectedVertex.color.slice(0, 3).map((c) => Math.floor(c * 255))
+    const [strR, strG, strB] = [r, g, b].map((c) => c.toString(16).padStart(2, '0'))
+    colorPicker.value = `#${strR}${strG}${strB}`
+  }
+}
+
+function updateVertexDropdown(): void {
+  if (vertexDropdown && selectedModel) {
+    // Reset vertex dropdown
+    vertexDropdown.innerHTML = ''
+
+    // Initialize vertex dropdown based on selected model
+    let first: boolean = true
+    selectedModel.vertexList.forEach((vertex) => {
+      // Select the first vertex
+      if (first) selectedVertex = vertex
+
+      // Adjust color picker based on selected vertex
+      adjustColorPicker()
+
+      // Add vertex option
+      if (vertex.id !== selectedModel?.vertexList[0].id || first) {
+        const option = document.createElement('option')
+        option.value = vertex.id
+        option.text = vertex.id
+        vertexDropdown.appendChild(option)
+      }
+      first = false
+    })
+
+    // Add all vertex option
+    vertexDropdown.appendChild(new Option('All Vertex', undefined))
+  }
+}
 
 // TODO: implement for other shapes (remove if not used)
 canvas.addEventListener('mousedown', (e) => {
@@ -382,27 +425,6 @@ const selectBtn = document.getElementById('select-btn')
 if (selectBtn) {
   selectBtn.addEventListener('click', () => {
     cursorType = CursorType.SELECT
-  })
-}
-
-const colorPicker = document.getElementById('color-picker')
-if (colorPicker) {
-  colorPicker.addEventListener('input', (e) => {
-    // Parse hex color string to normalized RGB
-    const hexColor = (e.target as HTMLInputElement).value.replace('#', '')
-    const normR = parseInt(hexColor.substring(0, 2), 16) / 255
-    const normG = parseInt(hexColor.substring(2, 4), 16) / 255
-    const normB = parseInt(hexColor.substring(4, 6), 16) / 255
-
-    if (selectedVertex) {
-      // Set color of a vertex if a vertex is selected
-      selectedVertex.color = [normR, normG, normB, 1]
-    } else {
-      // Set all vertices of a model if no vertex is selected
-      selectedModel?.vertexList.forEach((vertex) => {
-        vertex.color = [normR, normG, normB, 1]
-      })
-    }
   })
 }
 
