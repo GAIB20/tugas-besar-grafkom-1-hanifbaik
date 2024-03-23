@@ -22,16 +22,58 @@ export default class Rectangle extends Model {
     return gl.TRIANGLE_FAN;
   }
 
-  setWidth(width: number): void {
-    this.width = width;
+  getWidth(): number {
+    return this.width;
   }
 
-  setHeight(height: number): void {
-    this.height = height;
+  getHeight(): number {
+    return this.height;
+  }
+
+  getVertexRef(): Vertex {
+    return this.vertexRef;
   }
 
   setVertexRef(vertex: Vertex): void {
     this.vertexRef = vertex;
+  }
+
+  private getRelativeWidth(): number {
+    return this.vertexList[3].coord[0] - this.vertexRef.coord[0];
+  }
+
+  private getRelativeHeight(): number {
+    return this.vertexList[1].coord[1] - this.vertexRef.coord[1];
+  }
+
+  // Restore vertexRef to top-left vertex
+  restoreVertexRef(): void {
+    if (this.getRelativeWidth() < 0 && this.getRelativeHeight() < 0) {
+      this.vertexRef = this.vertexList[3];
+    } else if (this.getRelativeWidth() < 0 && this.getRelativeHeight() >= 0) {
+      this.vertexRef = this.vertexList[2];
+    } else if (this.getRelativeWidth() >= 0 && this.getRelativeHeight() < 0) {
+      this.vertexRef = this.vertexList[0];
+    } else {
+      this.vertexRef = this.vertexList[1];
+    }
+
+    this.vertexList = [
+      this.vertexRef,
+      new Vertex([
+        this.vertexRef.coord[0],
+        this.vertexRef.coord[1] - this.height,
+      ]),
+      new Vertex([
+        this.vertexRef.coord[0] + this.width,
+        this.vertexRef.coord[1] - this.height,
+      ]),
+      new Vertex([
+        this.vertexRef.coord[0] + this.width,
+        this.vertexRef.coord[1],
+      ]),
+      this.vertexRef,
+    ];
   }
 
   updateVerticesWhenDrawing(x: number, y: number): void {
@@ -42,7 +84,11 @@ export default class Rectangle extends Model {
       new Vertex([x, this.vertexRef.coord[1]]),
       this.vertexRef,
     ];
-    this.setHeight(y - this.vertexRef.coord[1]);
-    this.setWidth(x - this.vertexRef.coord[0]);
+    this.width = Math.abs(this.vertexRef.coord[0] - x);
+    this.height = Math.abs(this.vertexRef.coord[1] - y);
+  }
+
+  updateVerticesWhenDragging(x: number, y: number): void {
+    return;
   }
 }

@@ -119,8 +119,12 @@ const models = [line, square, rectangle, polygon, clickPolygon];
 // Initialize selected model
 selectedModel = models[0];
 
-const modelDropdown = document.getElementById("model-select");
-const vertexDropdown = document.getElementById("vertex-select");
+const modelDropdown = document.getElementById(
+  "model-select"
+) as HTMLSelectElement;
+const vertexDropdown = document.getElementById(
+  "vertex-select"
+) as HTMLSelectElement;
 const colorPicker = document.getElementById("color-picker") as HTMLInputElement;
 
 const translateXInput = document.getElementById(
@@ -145,8 +149,9 @@ modelDropdown?.addEventListener("change", (e) => {
   selectedModel = models.find(
     (model) => model.id === (e.target as HTMLSelectElement).value
   );
-  selectedVertex = null;
+  selectedVertex = selectedModel?.vertexList[0];
   updateVertexDropdown();
+  adjustColorPicker();
 
   if (selectedModel) {
     const selectedVertices = selectedModel?.vertexList;
@@ -175,7 +180,9 @@ modelDropdown?.addEventListener("change", (e) => {
         translateXInput.min = (-1.0 - selectedXClipSpace).toString();
         translateXInput.max = (1.0 - selectedXClipSpace).toString();
         translateXInput.value = selectedXClipSpace.toString();
+        selectedVertex = selectedModel?.vertexList[0];
         updateVertexDropdown();
+        adjustColorPicker();
       }
     });
 
@@ -198,7 +205,9 @@ modelDropdown?.addEventListener("change", (e) => {
         translateYInput.min = (-1.0 - selectedYClipSpace).toString();
         translateYInput.max = (1.0 - selectedYClipSpace).toString();
         translateYInput.value = selectedYClipSpace.toString();
+        selectedVertex = selectedModel?.vertexList[0];
         updateVertexDropdown();
+        adjustColorPicker();
       }
     });
   }
@@ -251,20 +260,20 @@ function updateVertexDropdown(): void {
 
     // Initialize vertex dropdown based on selected model
     let first: boolean = true;
-    selectedModel.vertexList.forEach((vertex) => {
-      // Select the first vertex
-      if (first) selectedVertex = vertex;
-
-      // Adjust color picker based on selected vertex
-      adjustColorPicker();
+    selectedModel.vertexList.forEach((vertex, idx) => {
+      if (
+        (selectedModel instanceof Square ||
+          selectedModel instanceof Rectangle ||
+          selectedModel instanceof Polygon) &&
+        idx === selectedModel.vertexList.length - 1
+      )
+        return;
 
       // Add vertex option
-      if (vertex.id !== selectedModel?.vertexList[0].id || first) {
-        const option = document.createElement("option");
-        option.value = vertex.id;
-        option.text = vertex.id;
-        vertexDropdown.appendChild(option);
-      }
+      const option = document.createElement("option");
+      option.value = vertex.id;
+      option.text = vertex.id;
+      vertexDropdown.appendChild(option);
       first = false;
     });
 
@@ -337,6 +346,98 @@ canvas.addEventListener("mousemove", (e) => {
       case CursorType.POLYGON:
         break;
     }
+  } else {
+    if (cursorType == CursorType.SELECT) {
+      let hoverThreshold = 7;
+      models.forEach((model) => {
+        model.vertexList.forEach((vertex, idx) => {
+          if (idx == model.vertexList.length - 1) return;
+          if (
+            x >= vertex.coord[0] - hoverThreshold &&
+            x <= vertex.coord[0] + hoverThreshold &&
+            y >= vertex.coord[1] - hoverThreshold &&
+            y <= vertex.coord[1] + hoverThreshold
+          ) {
+            document.body.style.cursor = "pointer";
+          } else {
+            document.body.style.cursor = "default";
+          }
+        });
+      });
+    }
+  }
+});
+
+canvas.addEventListener("click", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - 100;
+  const y = rect.bottom - e.clientY;
+  console.log(x, y);
+  if (isDrawing) return;
+  switch (cursorType) {
+    case CursorType.SELECT:
+      let hoverThreshold = 7;
+      for (const model of models) {
+        let isVertexSelected = false;
+
+        // Check if the cursor is clicking over the vertex
+        let idx = 0;
+        for (const vertex of model.vertexList) {
+          if (idx == model.vertexList.length - 1) break;
+          if (
+            x >= vertex.coord[0] - hoverThreshold &&
+            x <= vertex.coord[0] + hoverThreshold &&
+            y >= vertex.coord[1] - hoverThreshold &&
+            y <= vertex.coord[1] + hoverThreshold
+          ) {
+            selectedModel = model;
+            selectedVertex = vertex;
+            isVertexSelected = true;
+
+            modelDropdown.value = selectedModel.id;
+            updateVertexDropdown();
+            if (selectedVertex) {
+              vertexDropdown.value = selectedVertex.id;
+            }
+            adjustColorPicker();
+            break;
+          }
+          idx++;
+        }
+
+        if (isVertexSelected) continue;
+
+        // Check if the cursor is clicking over the model
+        switch (true) {
+          case model instanceof Line:
+            break;
+          case model instanceof Square:
+            break;
+          case model instanceof Rectangle:
+            if (
+              x <= model.getWidth() + model.getVertexRef().coord[0] &&
+              x >= model.getVertexRef().coord[0] &&
+              y <= model.getVertexRef().coord[1] &&
+              y >= model.getVertexRef().coord[1] - model.getHeight()
+            ) {
+              // Update selected model and vertex
+              selectedModel = model;
+              selectedVertex = model.getVertexRef();
+
+              // Update UI for dropdowns and color picker
+              modelDropdown.value = selectedModel.id;
+              updateVertexDropdown();
+              if (selectedVertex) {
+                vertexDropdown.value = selectedVertex.id;
+              }
+              adjustColorPicker();
+            }
+            break;
+          case model instanceof Polygon:
+            break;
+        }
+      }
+      break;
   }
 });
 
@@ -348,9 +449,27 @@ canvas.addEventListener("mouseup", (e) => {
       break;
     case CursorType.SQUARE:
       isDrawing = false;
+      const square = selectedModel as Square;
       break;
     case CursorType.RECTANGLE:
       isDrawing = false;
+
+      // Update selected model and vertex
+      selectedModel = models[models.length - 1];
+      const rectangle = selectedModel as Rectangle;
+      selectedVertex = rectangle.getVertexRef();
+
+      // Update UI for dropdowns and color picker
+      modelDropdown.value = selectedModel.id;
+      updateVertexDropdown();
+      if (selectedVertex) {
+        vertexDropdown.value = selectedVertex.id;
+      }
+      adjustColorPicker();
+
+      // Reset vertex reference to top-left vertex
+      rectangle.restoreVertexRef();
+
       break;
     case CursorType.POLYGON:
       break;
