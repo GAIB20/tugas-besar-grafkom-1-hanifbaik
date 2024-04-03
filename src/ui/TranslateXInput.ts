@@ -1,12 +1,19 @@
 import type Model from '@/primitives/Model'
 
 export default class TranslateXInput {
-  private readonly input: HTMLInputElement = document.getElementById('translate-x-input') as HTMLInputElement
+  private readonly input: HTMLInputElement = document.getElementById(
+    'translate-x-input'
+  ) as HTMLInputElement
 
-  addListener (canvas: HTMLCanvasElement, selectedModel: Model): void {
+  addListener (
+    canvas: HTMLCanvasElement,
+    selectedModel: Model,
+    adjustColorPicker: () => void,
+    updateVertexDropdown: () => void
+  ): void {
     const selectedVertices = selectedModel.vertexList
     const selectedXClipSpace =
-    (selectedVertices[0].coord[0] * 2.0) / canvas.width - 1.0
+      (selectedVertices[0].coord[0] * 2.0) / canvas.width - 1.0
 
     this.input.min = (-1.0 - selectedXClipSpace).toString()
     this.input.max = (1.0 - selectedXClipSpace).toString()
@@ -26,6 +33,9 @@ export default class TranslateXInput {
       this.input.min = (-1.0 - selectedXClipSpace).toString()
       this.input.max = (1.0 - selectedXClipSpace).toString()
       this.input.value = selectedXClipSpace.toString()
+
+      updateVertexDropdown()
+      adjustColorPicker()
     })
   }
 }

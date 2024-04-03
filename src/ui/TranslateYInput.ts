@@ -1,9 +1,16 @@
 import type Model from '@/primitives/Model'
 
 export default class TranslateYInput {
-  private readonly input: HTMLInputElement = document.getElementById('translate-y-input') as HTMLInputElement
+  private readonly input: HTMLInputElement = document.getElementById(
+    'translate-y-input'
+  ) as HTMLInputElement
 
-  addListener (canvas: HTMLCanvasElement, selectedModel: Model): void {
+  addListener (
+    canvas: HTMLCanvasElement,
+    selectedModel: Model,
+    adjustColorPicker: () => void,
+    updateVertexDropdown: () => void
+  ): void {
     const selectedVertices = selectedModel.vertexList
     const selectedYClipSpace =
       (selectedVertices[0].coord[1] * 2.0) / canvas.height - 1.0
@@ -21,11 +28,14 @@ export default class TranslateYInput {
 
       const selectedVertices = selectedModel.vertexList
       const selectedYClipSpace =
-          (selectedVertices[0].coord[1] * 2.0) / canvas.height - 1.0
+        (selectedVertices[0].coord[1] * 2.0) / canvas.height - 1.0
 
       this.input.min = (-1.0 - selectedYClipSpace).toString()
       this.input.max = (1.0 - selectedYClipSpace).toString()
       this.input.value = selectedYClipSpace.toString()
+
+      updateVertexDropdown()
+      adjustColorPicker()
     })
   }
 }

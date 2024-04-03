@@ -11,7 +11,10 @@ export default class ScaleXInput {
     this.input.value = selectedModel.getTransformMatArray()[0].toString()
 
     this.input.addEventListener('input', (e: any) => {
-      selectedModel.updateXScale(parseFloat(e.target.value as string), canvas.width)
+      selectedModel.updateXScale(
+        parseFloat(e.target.value as string),
+        canvas.width
+      )
     })
 
     this.input.addEventListener('mouseup', () => {

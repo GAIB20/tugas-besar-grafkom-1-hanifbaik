@@ -38,7 +38,11 @@ export default abstract class Model {
     this.vertexList.push(vertex)
   }
 
-  setVertexList (vertexList: Vertex[], canvasWidth: number, canvasHeight: number): void {
+  setVertexList (
+    vertexList: Vertex[],
+    canvasWidth: number,
+    canvasHeight: number
+  ): void {
     this.rightmostX = 0
     this.topmostY = 0
     this.leftmostX = canvasWidth
@@ -80,8 +84,8 @@ export default abstract class Model {
   }
 
   updateXScale (sx: number, canvasWidth: number): void {
-    const clipSpaceRightmost = this.rightmostX * 2.0 / canvasWidth - 1.0
-    const clipSpaceLeftmost = this.leftmostX * 2.0 / canvasWidth - 1.0
+    const clipSpaceRightmost = (this.rightmostX * 2.0) / canvasWidth - 1.0
+    const clipSpaceLeftmost = (this.leftmostX * 2.0) / canvasWidth - 1.0
 
     const pivotX = (clipSpaceRightmost + clipSpaceLeftmost) / 2.0
 
@@ -114,9 +118,11 @@ export default abstract class Model {
 
   resetXScale (canvasWidth: number): void {
     this.vertexList = this.vertexList.map((vertex) => {
-      const clipSpaceX = vertex.coord[0] * 2.0 / canvasWidth - 1.0
-      const newClipSpaceX = clipSpaceX * this.transformMat.get([0, 0]) + this.transformMat.get([2, 0])
-      const newX = (newClipSpaceX + 1.0) * canvasWidth / 2.0
+      const clipSpaceX = (vertex.coord[0] * 2.0) / canvasWidth - 1.0
+      const newClipSpaceX =
+        clipSpaceX * this.transformMat.get([0, 0]) +
+        this.transformMat.get([2, 0])
+      const newX = ((newClipSpaceX + 1.0) * canvasWidth) / 2.0
 
       return new Vertex([newX, vertex.coord[1]], vertex.color)
     })
@@ -142,9 +148,9 @@ export default abstract class Model {
 
   resetXTranslate (canvasWidth: number): void {
     this.vertexList = this.vertexList.map((vertex) => {
-      const clipSpaceX = vertex.coord[0] * 2.0 / canvasWidth - 1.0
+      const clipSpaceX = (vertex.coord[0] * 2.0) / canvasWidth - 1.0
       const newClipSpaceX = clipSpaceX + this.transformMat.get([2, 0])
-      const newX = (newClipSpaceX + 1.0) * canvasWidth / 2.0
+      const newX = ((newClipSpaceX + 1.0) * canvasWidth) / 2.0
 
       return new Vertex([newX, vertex.coord[1]], vertex.color)
     })
@@ -166,9 +172,9 @@ export default abstract class Model {
 
   resetYTranslate (canvasHeight: number): void {
     this.vertexList = this.vertexList.map((vertex) => {
-      const clipSpaceY = vertex.coord[1] * 2.0 / canvasHeight - 1.0
+      const clipSpaceY = (vertex.coord[1] * 2.0) / canvasHeight - 1.0
       const newClipSpaceY = clipSpaceY + this.transformMat.get([2, 1])
-      const newY = (newClipSpaceY + 1.0) * canvasHeight / 2.0
+      const newY = ((newClipSpaceY + 1.0) * canvasHeight) / 2.0
 
       return new Vertex([vertex.coord[0], newY], vertex.color)
     })
