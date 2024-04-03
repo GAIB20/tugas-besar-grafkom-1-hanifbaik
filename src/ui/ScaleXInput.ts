@@ -12,7 +12,8 @@ export default class ScaleXInput {
   private readonly onInput = (e: any): void => {
     if (this.selectedModel) {
       console.log('select', this.selectedModel.id)
-      this.selectedModel.updateXScale(
+      this.selectedModel.scale(
+        parseFloat(e.target.value as string),
         parseFloat(e.target.value as string),
         this.canvas
       )
@@ -21,7 +22,7 @@ export default class ScaleXInput {
 
   private readonly onMouseUp = (): void => {
     if (this.selectedModel) {
-      this.selectedModel.resetXScale(this.canvas)
+      this.selectedModel.resetScale(this.canvas)
 
       this.input.min = '0'
       this.input.max = '5'

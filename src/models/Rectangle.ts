@@ -1,6 +1,5 @@
 import Model from '@/primitives/Model'
 import Vertex from '@/primitives/Vertex'
-import { matrix, multiply } from 'mathjs'
 
 export default class Rectangle extends Model {
   // TODO: create constraint
@@ -98,67 +97,4 @@ export default class Rectangle extends Model {
   }
 
   updateVerticesWhenDragging (x: number, y: number): void {}
-
-  updateXScale (sx: number, canvas: HTMLCanvasElement): void {
-    const clipSpaceRightmost = (this.rightmostX * 2.0) / canvas.width - 1.0
-    const clipSpaceLeftmost = (this.leftmostX * 2.0) / canvas.width - 1.0
-
-    const pivotX = (clipSpaceRightmost + clipSpaceLeftmost) / 2.0
-
-    let transformMat = matrix([
-      [1, 0, 0],
-      [0, 1, 0],
-      [0, 0, 1]
-    ])
-    const translateMat = [
-      [1, 0, 0],
-      [0, 1, 0],
-      [-pivotX, 0, 1]
-    ]
-    const scaleMat = [
-      [sx, 0, 0],
-      [0, 1, 0],
-      [0, 0, 1]
-    ]
-    const reverseMat = [
-      [1, 0, 0],
-      [0, 1, 0],
-      [pivotX, 0, 1]
-    ]
-    transformMat = multiply(transformMat, translateMat)
-    transformMat = multiply(transformMat, scaleMat)
-    transformMat = multiply(transformMat, reverseMat)
-
-    this.transformMat = transformMat
-  }
-
-  resetXScale (canvas: HTMLCanvasElement): void {
-    this.vertexList = this.vertexList.map((vertex) => {
-      const clipSpaceX = (vertex.coord[0] * 2.0) / canvas.width - 1.0
-      const newClipSpaceX =
-        clipSpaceX * this.transformMat.get([0, 0]) +
-        this.transformMat.get([2, 0])
-      const newX = ((newClipSpaceX + 1.0) * canvas.width) / 2.0
-
-      return new Vertex([newX, vertex.coord[1]], vertex.color)
-    })
-
-    this.rightmostX = 0
-    this.leftmostX = canvas.width
-
-    for (const vertex of this.vertexList) {
-      if (vertex.coord[0] > this.rightmostX) {
-        this.rightmostX = vertex.coord[0]
-      }
-      if (vertex.coord[0] < this.leftmostX) {
-        this.leftmostX = vertex.coord[0]
-      }
-    }
-
-    this.transformMat = matrix([
-      [1, 0, 0],
-      [0, 1, 0],
-      [0, 0, 1]
-    ])
-  }
 }

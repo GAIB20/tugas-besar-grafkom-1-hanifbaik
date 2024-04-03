@@ -347,16 +347,54 @@ canvas.addEventListener('mousemove', (e) => {
         ) {
           scaleX = Math.abs((farthestX - deltaX) / sideLength)
           scaleY = Math.abs((farthestY - deltaY) / sideLength)
-
-          scale = Math.min(scaleX, scaleY)
         } else {
           scaleX = Math.abs((farthestX + deltaX) / sideLength)
           scaleY = Math.abs((farthestY + deltaY) / sideLength)
-
-          scale = Math.max(scaleX, scaleY)
         }
 
-        selectedModel.updateXScale(Math.abs(scale), canvas)
+        scale = Math.max(scaleX, scaleY)
+        selectedModel.scale(Math.abs(scale), Math.abs(scale), canvas)
+        break
+      }
+      case selectedModel instanceof Polygon:
+      case selectedModel instanceof Rectangle: {
+        const lengthX = Math.max(
+          Math.abs(selectedVertex.coord[0] - selectedModel.getLeftmostX()),
+          Math.abs(selectedVertex.coord[0] - selectedModel.getRightmostX())
+        )
+        const lengthY = Math.max(
+          Math.abs(selectedVertex.coord[1] - selectedModel.getTopmostY()),
+          Math.abs(selectedVertex.coord[1] - selectedModel.getBottommostY())
+        )
+
+        const farthestX = Math.max(
+          Math.abs(x - selectedModel.getLeftmostX()),
+          Math.abs(x - selectedModel.getRightmostX())
+        )
+        const farthestY = Math.max(
+          Math.abs(y - selectedModel.getTopmostY()),
+          Math.abs(y - selectedModel.getBottommostY())
+        )
+
+        const deltaX = Math.abs(x - selectedVertex.coord[0])
+        const deltaY = Math.abs(y - selectedVertex.coord[1])
+
+        let scaleX = 1
+        let scaleY = 1
+        if (
+          x >= selectedModel.getLeftmostX() &&
+          x <= selectedModel.getRightmostX() &&
+          y >= selectedModel.getBottommostY() &&
+          y <= selectedModel.getTopmostY()
+        ) {
+          scaleX = Math.abs((farthestX - deltaX) / lengthX)
+          scaleY = Math.abs((farthestY - deltaY) / lengthY)
+        } else {
+          scaleX = Math.abs((farthestX + deltaX) / lengthX)
+          scaleY = Math.abs((farthestY + deltaY) / lengthY)
+        }
+
+        selectedModel.scale(Math.abs(scaleX), Math.abs(scaleY), canvas)
         break
       }
     }
@@ -506,7 +544,7 @@ canvas.addEventListener('mouseup', (e) => {
       break
     case CursorType.SELECT:
       isScaling = false
-      selectedModel?.resetXScale(canvas)
+      selectedModel?.resetScale(canvas)
       break
   }
 })
