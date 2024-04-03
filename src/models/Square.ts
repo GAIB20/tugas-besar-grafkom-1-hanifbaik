@@ -23,13 +23,16 @@ export default class Square extends Model {
     return this.vertexRef
   }
 
-  updateVerticesWhenDrawing (x: number, y: number): void {
-    const length = Math.max(Math.abs(x - this.vertexRef.coord[0]), Math.abs(y - this.vertexRef.coord[1]))
+  updateVerticesWhenDrawing (x: number, y: number, canvas: HTMLCanvasElement): void {
+    const length = Math.max(
+      Math.abs(x - this.vertexRef.coord[0]),
+      Math.abs(y - this.vertexRef.coord[1])
+    )
 
     const lengthX = x - this.vertexRef.coord[0] >= 0 ? length : -length
     const lengthY = y - this.vertexRef.coord[1] >= 0 ? length : -length
 
-    this.vertexList = [
+    super.setVertexList([
       this.vertexRef,
       new Vertex([this.vertexRef.coord[0], this.vertexRef.coord[1] + lengthY]),
       new Vertex([
@@ -38,6 +41,6 @@ export default class Square extends Model {
       ]),
       new Vertex([this.vertexRef.coord[0] + lengthX, this.vertexRef.coord[1]]),
       this.vertexRef
-    ]
+    ], canvas.width, canvas.height)
   }
 }

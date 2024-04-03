@@ -6,6 +6,9 @@ import Line from './models/Line'
 import Square from './models/Square'
 import Rectangle from './models/Rectangle'
 import type Model from './primitives/Model'
+import ScaleXInput from './ui/ScaleXInput'
+import TranslateXInput from './ui/TranslateXInput'
+import TranslateYInput from './ui/TranslateYInput'
 
 enum CursorType {
   SELECT = 0,
@@ -73,7 +76,7 @@ if (!posBuffer || !colorBuffer) {
 
 const width = canvas.clientWidth
 const height = canvas.clientHeight
-console.log(width)
+
 canvas.width = width
 canvas.height = height
 
@@ -122,9 +125,6 @@ selectedModel = models[0]
 const modelDropdown = document.getElementById('model-select')
 const vertexDropdown = document.getElementById('vertex-select')
 
-const translateXInput = document.getElementById('translate-x-input') as HTMLInputElement
-const translateYInput = document.getElementById('translate-y-input') as HTMLInputElement
-
 // Initialize model dropdown
 if (modelDropdown) {
   models.forEach((model) => {
@@ -162,52 +162,9 @@ modelDropdown?.addEventListener('change', (e) => {
   }
 
   if (selectedModel) {
-    const selectedVertices = selectedModel?.vertexList
-    const selectedXClipSpace = selectedVertices[0].coord[0] * 2.0 / canvas.width - 1.0
-    const selectedYClipSpace = selectedVertices[0].coord[1] * 2.0 / canvas.height - 1.0
-
-    translateXInput.min = (-1.0 - selectedXClipSpace).toString()
-    translateXInput.max = (1.0 - selectedXClipSpace).toString()
-    translateXInput.value = selectedXClipSpace.toString()
-
-    translateXInput.addEventListener('input', (e: any) => {
-      selectedModel?.updateXTranslate(parseFloat(e.target.value as string))
-    })
-
-    translateXInput.addEventListener('mouseup', (e: any) => {
-      if (selectedModel) {
-        selectedModel?.resetXTranslate(canvas.width)
-
-        const selectedVertices = selectedModel?.vertexList
-        const selectedXClipSpace = selectedVertices[0].coord[0] * 2.0 / canvas.width - 1.0
-        // const selectedYClipSpace = selectedVertices[0].coord[1] * 2.0 / canvas.height - 1.0
-
-        translateXInput.min = (-1.0 - selectedXClipSpace).toString()
-        translateXInput.max = (1.0 - selectedXClipSpace).toString()
-        translateXInput.value = selectedXClipSpace.toString()
-      }
-    })
-
-    translateYInput.min = (-1.0 - selectedYClipSpace).toString()
-    translateYInput.max = (1.0 - selectedYClipSpace).toString()
-    translateYInput.value = selectedYClipSpace.toString()
-
-    translateYInput.addEventListener('input', (e: any) => {
-      selectedModel?.updateYTranslate(parseFloat(e.target.value as string))
-    })
-
-    translateYInput.addEventListener('mouseup', (e: any) => {
-      if (selectedModel) {
-        selectedModel?.resetYTranslate(canvas.height)
-
-        const selectedVertices = selectedModel?.vertexList
-        const selectedYClipSpace = selectedVertices[0].coord[1] * 2.0 / canvas.height - 1.0
-
-        translateYInput.min = (-1.0 - selectedYClipSpace).toString()
-        translateYInput.max = (1.0 - selectedYClipSpace).toString()
-        translateYInput.value = selectedYClipSpace.toString()
-      }
-    })
+    new TranslateXInput().addListener(canvas, selectedModel)
+    new TranslateYInput().addListener(canvas, selectedModel)
+    new ScaleXInput().addListener(canvas, selectedModel)
   }
 })
 
@@ -271,7 +228,7 @@ canvas.addEventListener('mousemove', (e) => {
       }
       case CursorType.SQUARE: {
         const square = models[models.length - 1] as Square
-        square.updateVerticesWhenDrawing(x, y)
+        square.updateVerticesWhenDrawing(x, y, canvas)
         break
       }
       case CursorType.RECTANGLE: {
@@ -317,21 +274,6 @@ export const renderAll = (): void => {
   })
 
   window.requestAnimationFrame(renderAll)
-}
-
-// TODO: hapus (simulate transform)
-const transformBtn1 = document.getElementById('transform-btn-1')
-if (transformBtn1) {
-  transformBtn1.addEventListener('click', () => {
-    models[4].translate(0.1, 0.1)
-  })
-}
-
-const transformBtn2 = document.getElementById('transform-btn-2')
-if (transformBtn2) {
-  transformBtn2.addEventListener('click', () => {
-    models[4].translate(-0.1, -0.1)
-  })
 }
 
 // Buttons

@@ -10,6 +10,11 @@ export default abstract class Model {
     [0, 0, 1]
   ])
 
+  private rightmostX: number = 0.0
+  private leftmostX: number = 0.0
+  private topmostY: number = 0.0
+  private bottommostY: number = 0.0
+
   constructor (id: string) {
     this.id = id
   }
@@ -33,6 +38,29 @@ export default abstract class Model {
     this.vertexList.push(vertex)
   }
 
+  setVertexList (vertexList: Vertex[], canvasWidth: number, canvasHeight: number): void {
+    this.rightmostX = 0
+    this.topmostY = 0
+    this.leftmostX = canvasWidth
+    this.bottommostY = canvasHeight
+
+    for (const vertex of vertexList) {
+      if (vertex.coord[0] > this.rightmostX) {
+        this.rightmostX = vertex.coord[0]
+      }
+      if (vertex.coord[0] < this.leftmostX) {
+        this.leftmostX = vertex.coord[0]
+      }
+      if (vertex.coord[1] > this.topmostY) {
+        this.topmostY = vertex.coord[1]
+      }
+      if (vertex.coord[1] < this.bottommostY) {
+        this.bottommostY = vertex.coord[1]
+      }
+    }
+    this.vertexList = vertexList
+  }
+
   translate (tx: number, ty: number): void {
     const translateMat = [
       [1, 0, 0],
@@ -51,14 +79,88 @@ export default abstract class Model {
     this.transformMat.set([2, 1], ty)
   }
 
+  updateXScale (sx: number, canvasWidth: number): void {
+    const clipSpaceRightmost = this.rightmostX * 2.0 / canvasWidth - 1.0
+    const clipSpaceLeftmost = this.leftmostX * 2.0 / canvasWidth - 1.0
+
+    const pivotX = (clipSpaceRightmost + clipSpaceLeftmost) / 2.0
+
+    let transformMat = matrix([
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1]
+    ])
+    const translateMat = [
+      [1, 0, 0],
+      [0, 1, 0],
+      [-pivotX, 0, 1]
+    ]
+    const scaleMat = [
+      [sx, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1]
+    ]
+    const reverseMat = [
+      [1, 0, 0],
+      [0, 1, 0],
+      [pivotX, 0, 1]
+    ]
+    transformMat = multiply(transformMat, translateMat)
+    transformMat = multiply(transformMat, scaleMat)
+    transformMat = multiply(transformMat, reverseMat)
+
+    this.transformMat = transformMat
+  }
+
+  resetXScale (canvasWidth: number): void {
+    this.vertexList = this.vertexList.map((vertex) => {
+      const clipSpaceX = vertex.coord[0] * 2.0 / canvasWidth - 1.0
+      const newClipSpaceX = clipSpaceX * this.transformMat.get([0, 0]) + this.transformMat.get([2, 0])
+      const newX = (newClipSpaceX + 1.0) * canvasWidth / 2.0
+
+      return new Vertex([newX, vertex.coord[1]], vertex.color)
+    })
+
+    this.rightmostX = 0
+    this.leftmostX = canvasWidth
+
+    for (const vertex of this.vertexList) {
+      if (vertex.coord[0] > this.rightmostX) {
+        this.rightmostX = vertex.coord[0]
+      }
+      if (vertex.coord[0] < this.leftmostX) {
+        this.leftmostX = vertex.coord[0]
+      }
+    }
+
+    this.transformMat = matrix([
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1]
+    ])
+  }
+
   resetXTranslate (canvasWidth: number): void {
     this.vertexList = this.vertexList.map((vertex) => {
       const clipSpaceX = vertex.coord[0] * 2.0 / canvasWidth - 1.0
       const newClipSpaceX = clipSpaceX + this.transformMat.get([2, 0])
       const newX = (newClipSpaceX + 1.0) * canvasWidth / 2.0
 
-      return new Vertex([newX, vertex.coord[1]])
+      return new Vertex([newX, vertex.coord[1]], vertex.color)
     })
+
+    this.rightmostX = 0
+    this.leftmostX = canvasWidth
+
+    for (const vertex of this.vertexList) {
+      if (vertex.coord[0] > this.rightmostX) {
+        this.rightmostX = vertex.coord[0]
+      }
+      if (vertex.coord[0] < this.leftmostX) {
+        this.leftmostX = vertex.coord[0]
+      }
+    }
+
     this.transformMat.set([2, 0], 0)
   }
 
@@ -68,7 +170,7 @@ export default abstract class Model {
       const newClipSpaceY = clipSpaceY + this.transformMat.get([2, 1])
       const newY = (newClipSpaceY + 1.0) * canvasHeight / 2.0
 
-      return new Vertex([vertex.coord[0], newY])
+      return new Vertex([vertex.coord[0], newY], vertex.color)
     })
     this.transformMat.set([2, 1], 0)
   }
