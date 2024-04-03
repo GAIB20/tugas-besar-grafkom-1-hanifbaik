@@ -82,20 +82,53 @@ export default abstract class Model {
   }
 
   translate (tx: number, ty: number): void {
-    const translateMat = [
+    const translateMat = matrix([
       [1, 0, 0],
       [0, 1, 0],
       [tx, ty, 1]
-    ]
-    this.transformMat = multiply(this.transformMat, translateMat)
+    ])
+
+    this.transformMat = translateMat
   }
 
-  updateXTranslate (tx: number): void {
-    this.transformMat.set([2, 0], tx)
-  }
+  resetTranslate (canvas: HTMLCanvasElement): void {
+    this.vertexList = this.vertexList.map((vertex) => {
+      const clipSpaceX = (vertex.coord[0] * 2.0) / canvas.width - 1.0
+      const newClipSpaceX = clipSpaceX + this.transformMat.get([2, 0])
+      const newX = ((newClipSpaceX + 1.0) * canvas.width) / 2.0
 
-  updateYTranslate (ty: number): void {
-    this.transformMat.set([2, 1], ty)
+      const clipSpaceY = (vertex.coord[1] * 2.0) / canvas.height - 1.0
+      const newClipSpaceY = clipSpaceY + this.transformMat.get([2, 1])
+      const newY = ((newClipSpaceY + 1.0) * canvas.height) / 2.0
+
+      return new Vertex([newX, newY], vertex.color)
+    })
+
+    this.rightmostX = 0
+    this.topmostY = 0
+    this.leftmostX = canvas.width
+    this.bottommostY = canvas.height
+
+    for (const vertex of this.vertexList) {
+      if (vertex.coord[0] > this.rightmostX) {
+        this.rightmostX = vertex.coord[0]
+      }
+      if (vertex.coord[0] < this.leftmostX) {
+        this.leftmostX = vertex.coord[0]
+      }
+      if (vertex.coord[1] > this.topmostY) {
+        this.topmostY = vertex.coord[1]
+      }
+      if (vertex.coord[1] < this.bottommostY) {
+        this.bottommostY = vertex.coord[1]
+      }
+    }
+
+    this.transformMat = matrix([
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1]
+    ])
   }
 
   scale (sx: number, sy: number, canvas: HTMLCanvasElement): void {

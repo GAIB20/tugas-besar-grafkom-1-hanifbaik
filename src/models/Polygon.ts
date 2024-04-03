@@ -12,9 +12,19 @@ export default class Polygon extends Model {
   private static count: number = 1
   private polarRef: Vertex = new Vertex([0, 0])
 
-  constructor () {
+  constructor (polygon?: Polygon) {
     super(`polygon-${Polygon.count}`)
     Polygon.count++
+
+    if (polygon) {
+      this.vertexList = polygon.vertexList.map((v) => new Vertex(v.coord))
+      this.polarRef = new Vertex(polygon.polarRef.coord)
+
+      this.leftmostX = polygon.leftmostX
+      this.rightmostX = polygon.rightmostX
+      this.topmostY = polygon.topmostY
+      this.bottommostY = polygon.bottommostY
+    }
   }
 
   addVertex (vertex: Vertex): void {
@@ -24,6 +34,11 @@ export default class Polygon extends Model {
     if (len === 0) {
       this.vertexList.push(vertex)
       this.vertexList.push(vertex)
+
+      this.leftmostX = vertex.coord[0]
+      this.rightmostX = vertex.coord[0]
+      this.topmostY = vertex.coord[1]
+      this.bottommostY = vertex.coord[1]
     } else {
       this.vertexList = [
         ...this.vertexList.slice(0, len - 1),
@@ -32,6 +47,21 @@ export default class Polygon extends Model {
       ]
 
       this.convexHull()
+
+      for (const vertex of this.vertexList) {
+        if (vertex.coord[0] > this.rightmostX) {
+          this.rightmostX = vertex.coord[0]
+        }
+        if (vertex.coord[0] < this.leftmostX) {
+          this.leftmostX = vertex.coord[0]
+        }
+        if (vertex.coord[1] > this.topmostY) {
+          this.topmostY = vertex.coord[1]
+        }
+        if (vertex.coord[1] < this.bottommostY) {
+          this.bottommostY = vertex.coord[1]
+        }
+      }
     }
   }
 

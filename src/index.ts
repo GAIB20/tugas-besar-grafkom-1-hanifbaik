@@ -6,9 +6,6 @@ import Line from './models/Line'
 import Square from './models/Square'
 import Rectangle from './models/Rectangle'
 import type Model from './primitives/Model'
-import ScaleXInput from './ui/ScaleXInput'
-import TranslateXInput from './ui/TranslateXInput'
-import TranslateYInput from './ui/TranslateYInput'
 
 enum CursorType {
   SELECT = 0,
@@ -21,6 +18,8 @@ enum CursorType {
 let cursorType: CursorType = CursorType.LINE
 let isDrawing: boolean = false
 let isScaling: boolean = false
+let isMoving: boolean = false
+let moveReference = new Vertex([0, 0])
 let selectedModel:
 | Model
 | Line
@@ -91,7 +90,7 @@ gl.useProgram(program)
 gl.uniform2f(resUniLoc, gl.canvas.width, gl.canvas.height)
 
 const models: Model[] = []
-const vertexSelector = new Square()
+const clickPolygon = new Polygon()
 
 // Initialize selected model
 selectedModel = models[0]
@@ -103,8 +102,6 @@ const vertexDropdown = document.getElementById(
   'vertex-select'
 ) as HTMLSelectElement
 const colorPicker = document.getElementById('color-picker') as HTMLInputElement
-
-const scaleXInput = new ScaleXInput(canvas)
 
 // Initialize model dropdown
 if (modelDropdown) {
@@ -124,25 +121,6 @@ modelDropdown?.addEventListener('change', (e) => {
   selectedVertex = selectedModel?.vertexList[0]
   updateVertexDropdown()
   adjustColorPicker()
-
-  if (selectedModel) {
-    scaleXInput.removeListener()
-
-    new TranslateXInput().addListener(
-      canvas,
-      selectedModel,
-      adjustColorPicker,
-      updateVertexDropdown
-    )
-    new TranslateYInput().addListener(
-      canvas,
-      selectedModel,
-      adjustColorPicker,
-      updateVertexDropdown
-    )
-
-    scaleXInput.addListener(selectedModel)
-  }
 })
 
 if (colorPicker) {
@@ -250,7 +228,7 @@ canvas.addEventListener('mousedown', (e) => {
       }
       break
     case CursorType.POLYGON:
-      models[4].addVertex(new Vertex([x, y]))
+      clickPolygon.addVertex(new Vertex([x, y]))
       break
     case CursorType.SELECT: {
       const hoverThreshold = 4
@@ -262,6 +240,8 @@ canvas.addEventListener('mousedown', (e) => {
           y >= model.getBottommostY() - hoverThreshold &&
           y <= model.getTopmostY() + hoverThreshold
         ) {
+          selectedModel = model
+
           for (const vertex of model.vertexList) {
             if (
               x >= vertex.coord[0] - hoverThreshold &&
@@ -269,7 +249,6 @@ canvas.addEventListener('mousedown', (e) => {
               y >= vertex.coord[1] - hoverThreshold &&
               y <= vertex.coord[1] + hoverThreshold
             ) {
-              selectedModel = model
               selectedVertex = vertex
 
               modelDropdown.value = selectedModel.id
@@ -282,6 +261,11 @@ canvas.addEventListener('mousedown', (e) => {
               isScaling = true
               break
             }
+          }
+
+          if (!isScaling) {
+            isMoving = true
+            moveReference = new Vertex([x, y])
           }
 
           break
@@ -398,6 +382,14 @@ canvas.addEventListener('mousemove', (e) => {
         break
       }
     }
+  } else if (isMoving && selectedModel) {
+    const xClipSpace = (x * 2.0) / canvas.width - 1.0
+    const yClipSpace = (y * 2.0) / canvas.height - 1.0
+
+    const xReferenceClipSpace = (moveReference.coord[0] * 2.0) / canvas.width - 1.0
+    const yReferenceClipSpace = (moveReference.coord[1] * 2.0) / canvas.height - 1.0
+
+    selectedModel.translate(xClipSpace - xReferenceClipSpace, yClipSpace - yReferenceClipSpace)
   } else {
     if (cursorType === CursorType.SELECT) {
       const hoverThreshold = 4
@@ -425,8 +417,6 @@ canvas.addEventListener('mousemove', (e) => {
 
           break
         } else {
-          vertexSelector.setVertexRef(new Vertex([0, 0]))
-          vertexSelector.updateVerticesWhenDrawing(0, 0, canvas)
           document.body.style.cursor = 'default'
         }
       }
@@ -543,8 +533,17 @@ canvas.addEventListener('mouseup', (e) => {
     case CursorType.POLYGON:
       break
     case CursorType.SELECT:
+      if (isScaling) {
+        selectedModel?.resetScale(canvas)
+      }
+
+      if (isMoving) {
+        moveReference = new Vertex([0, 0])
+        selectedModel?.resetTranslate(canvas)
+      }
+
       isScaling = false
-      selectedModel?.resetScale(canvas)
+      isMoving = false
       break
   }
 })
@@ -563,7 +562,7 @@ export const renderAll = (): void => {
     )
   })
 
-  vertexSelector.render(
+  clickPolygon.render(
     gl,
     posBuffer,
     posAttrLoc,
@@ -586,6 +585,18 @@ if (lineBtn) {
 const buttonConttainer = document.getElementById('button-container')
 if (buttonConttainer) {
   buttonConttainer.addEventListener('click', (e) => {
+    if (clickPolygon.vertexList.length > 0) {
+      models.push(new Polygon(clickPolygon))
+
+      modelDropdown?.appendChild(
+        new Option(models[models.length - 1].id, models[models.length - 1].id)
+      )
+
+      for (const vertex of clickPolygon.vertexList) {
+        clickPolygon.deleteVertex(vertex)
+      }
+    }
+
     Array.from(buttonConttainer.children).forEach((c) => {
       if (c === e.target) {
         c.classList.add('bg-blue-200')
