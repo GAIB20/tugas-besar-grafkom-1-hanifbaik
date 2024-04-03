@@ -1,5 +1,5 @@
-import Model from "@/primitives/Model";
-import Vertex from "@/primitives/Vertex";
+import Model from '@/primitives/Model'
+import Vertex from '@/primitives/Vertex'
 
 enum Orientation {
   COLLINEAR,
@@ -9,92 +9,92 @@ enum Orientation {
 
 export default class Polygon extends Model {
   // TODO: create constraint
-  private static count: number = 1;
-  private polarRef: Vertex = new Vertex([0, 0]);
+  private static count: number = 1
+  private polarRef: Vertex = new Vertex([0, 0])
 
-  constructor() {
-    super(`polygon-${Polygon.count}`);
-    Polygon.count++;
+  constructor () {
+    super(`polygon-${Polygon.count}`)
+    Polygon.count++
   }
 
-  addVertex(vertex: Vertex): void {
-    if (this.vertexList.some((v) => v.isEq(vertex))) return;
+  addVertex (vertex: Vertex): void {
+    if (this.vertexList.some((v) => v.isEq(vertex))) return
 
-    const len = this.vertexList.length;
+    const len = this.vertexList.length
     if (len === 0) {
-      this.vertexList.push(vertex);
-      this.vertexList.push(vertex);
+      this.vertexList.push(vertex)
+      this.vertexList.push(vertex)
     } else {
       this.vertexList = [
         ...this.vertexList.slice(0, len - 1),
         vertex,
-        this.vertexList[len - 1],
-      ];
+        this.vertexList[len - 1]
+      ]
 
-      this.convexHull();
+      this.convexHull()
     }
   }
 
-  deleteVertex(vertex: Vertex): void {
-    this.vertexList = this.vertexList.filter((v) => !v.isEq(vertex));
-    this.convexHull();
+  deleteVertex (vertex: Vertex): void {
+    this.vertexList = this.vertexList.filter((v) => !v.isEq(vertex))
+    this.convexHull()
   }
 
-  getDrawMethod(gl: WebGLRenderingContext): number {
-    if (this.vertexList.length === 2) return gl.POINTS;
-    if (this.vertexList.length === 3) return gl.LINES;
-    return gl.TRIANGLE_FAN;
+  getDrawMethod (gl: WebGLRenderingContext): number {
+    if (this.vertexList.length === 2) return gl.POINTS
+    if (this.vertexList.length === 3) return gl.LINES
+    return gl.TRIANGLE_FAN
   }
 
-  private getOrientation(v0: Vertex, v1: Vertex, v2: Vertex): Orientation {
+  private getOrientation (v0: Vertex, v1: Vertex, v2: Vertex): Orientation {
     // get orientation from cross product
     const val =
       (v1.coord[1] - v0.coord[1]) * (v2.coord[0] - v1.coord[0]) -
-      (v1.coord[0] - v0.coord[0]) * (v2.coord[1] - v1.coord[1]);
+      (v1.coord[0] - v0.coord[0]) * (v2.coord[1] - v1.coord[1])
 
-    if (val === 0) return Orientation.COLLINEAR;
-    if (val > 0) return Orientation.CLOCKWISE;
-    return Orientation.COUNTER_CLOCKWISE;
+    if (val === 0) return Orientation.COLLINEAR
+    if (val > 0) return Orientation.CLOCKWISE
+    return Orientation.COUNTER_CLOCKWISE
   }
 
-  private cmpPolar(v1: Vertex, v2: Vertex): number {
-    const ori = this.getOrientation(this.polarRef, v1, v2);
+  private cmpPolar (v1: Vertex, v2: Vertex): number {
+    const ori = this.getOrientation(this.polarRef, v1, v2)
 
-    if (ori === Orientation.CLOCKWISE) return 1;
-    if (ori === Orientation.COUNTER_CLOCKWISE) return -1;
+    if (ori === Orientation.CLOCKWISE) return 1
+    if (ori === Orientation.COUNTER_CLOCKWISE) return -1
     return v1.getSqDistTo(this.polarRef) > v2.getSqDistTo(this.polarRef)
       ? 1
-      : -1;
+      : -1
   }
 
-  private convexHull(): void {
-    if (this.vertexList.length < 4) return;
+  private convexHull (): void {
+    if (this.vertexList.length < 4) return
 
-    this.vertexList.pop(); // remove end point
+    this.vertexList.pop() // remove end point
 
     // select bottom-most point
-    let minIdx = 0;
+    let minIdx = 0
     for (let i = 1; i < this.vertexList.length; i++) {
-      const curr = this.vertexList[i];
-      const currMin = this.vertexList[minIdx];
+      const curr = this.vertexList[i]
+      const currMin = this.vertexList[minIdx]
       if (
         curr.coord[1] < currMin.coord[1] ||
         (curr.coord[1] === currMin.coord[1] && curr.coord[0] < currMin.coord[0])
       ) {
-        minIdx = i;
+        minIdx = i
       }
     }
 
-    this.polarRef = this.vertexList[minIdx];
-    const temp = this.vertexList[0];
-    this.vertexList[0] = this.vertexList[minIdx];
-    this.vertexList[minIdx] = temp;
+    this.polarRef = this.vertexList[minIdx]
+    const temp = this.vertexList[0]
+    this.vertexList[0] = this.vertexList[minIdx]
+    this.vertexList[minIdx] = temp
 
     // sort by polar angle
-    this.vertexList.sort((v1, v2) => this.cmpPolar(v1, v2));
+    this.vertexList.sort((v1, v2) => this.cmpPolar(v1, v2))
 
     // remove collinear points
-    let newArrLen = 1;
+    let newArrLen = 1
     for (let i = 1; i < this.vertexList.length; i++) {
       while (
         i < this.vertexList.length - 1 &&
@@ -104,18 +104,18 @@ export default class Polygon extends Model {
           this.vertexList[i + 1]
         ) === Orientation.COLLINEAR
       ) {
-        i++;
+        i++
       }
-      this.vertexList[newArrLen] = this.vertexList[i];
-      newArrLen++;
+      this.vertexList[newArrLen] = this.vertexList[i]
+      newArrLen++
     }
 
-    if (newArrLen < 3) return;
+    if (newArrLen < 3) return
 
-    const hull: Vertex[] = [];
-    hull.push(this.vertexList[0]);
-    hull.push(this.vertexList[1]);
-    hull.push(this.vertexList[2]);
+    const hull: Vertex[] = []
+    hull.push(this.vertexList[0])
+    hull.push(this.vertexList[1])
+    hull.push(this.vertexList[2])
 
     for (let i = 3; i < newArrLen; i++) {
       while (
@@ -125,13 +125,76 @@ export default class Polygon extends Model {
           this.vertexList[i]
         ) !== Orientation.COUNTER_CLOCKWISE
       ) {
-        hull.pop();
+        hull.pop()
       }
-      hull.push(this.vertexList[i]);
+      hull.push(this.vertexList[i])
     }
 
     // close polygon
-    hull.push(this.vertexList[0]);
-    this.vertexList = hull;
+    hull.push(this.vertexList[0])
+    this.vertexList = hull
+  }
+
+  updateXScale (sx: number, canvas: HTMLCanvasElement): void {
+    // const clipSpaceRightmost = (this.rightmostX * 2.0) / canvasWidth - 1.0
+    // const clipSpaceLeftmost = (this.leftmostX * 2.0) / canvasWidth - 1.0
+
+    // const pivotX = (clipSpaceRightmost + clipSpaceLeftmost) / 2.0
+
+    // let transformMat = matrix([
+    //   [1, 0, 0],
+    //   [0, 1, 0],
+    //   [0, 0, 1]
+    // ])
+    // const translateMat = [
+    //   [1, 0, 0],
+    //   [0, 1, 0],
+    //   [-pivotX, 0, 1]
+    // ]
+    // const scaleMat = [
+    //   [sx, 0, 0],
+    //   [0, sx, 0],
+    //   [0, 0, 1]
+    // ]
+    // const reverseMat = [
+    //   [1, 0, 0],
+    //   [0, 1, 0],
+    //   [pivotX, 0, 1]
+    // ]
+    // transformMat = multiply(transformMat, translateMat)
+    // transformMat = multiply(transformMat, scaleMat)
+    // transformMat = multiply(transformMat, reverseMat)
+
+    // this.transformMat = transformMat
+  }
+
+  resetXScale (canvas: HTMLCanvasElement): void {
+    // this.vertexList = this.vertexList.map((vertex) => {
+    //   const clipSpaceX = (vertex.coord[0] * 2.0) / canvasWidth - 1.0
+    //   const newClipSpaceX =
+    //     clipSpaceX * this.transformMat.get([0, 0]) +
+    //     this.transformMat.get([2, 0])
+    //   const newX = ((newClipSpaceX + 1.0) * canvasWidth) / 2.0
+
+    //   return new Vertex([newX, vertex.coord[1]], vertex.color)
+    // })
+
+    // this.rightmostX = 0
+    // this.leftmostX = canvasWidth
+
+    // for (const vertex of this.vertexList) {
+    //   if (vertex.coord[0] > this.rightmostX) {
+    //     this.rightmostX = vertex.coord[0]
+    //   }
+    //   if (vertex.coord[0] < this.leftmostX) {
+    //     this.leftmostX = vertex.coord[0]
+    //   }
+    // }
+
+    // this.transformMat = matrix([
+    //   [1, 0, 0],
+    //   [0, 1, 0],
+    //   [0, 0, 1]
+    // ])
   }
 }

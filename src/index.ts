@@ -20,6 +20,7 @@ enum CursorType {
 
 let cursorType: CursorType = CursorType.LINE
 let isDrawing: boolean = false
+let isScaling: boolean = false
 let selectedModel:
 | Model
 | Line
@@ -28,6 +29,7 @@ let selectedModel:
 | Polygon
 | undefined
 | null
+
 let selectedVertex: Vertex | undefined | null
 
 const canvasElmt = document.getElementById('webgl-canvas')
@@ -88,36 +90,8 @@ gl.clear(gl.COLOR_BUFFER_BIT)
 gl.useProgram(program)
 gl.uniform2f(resUniLoc, gl.canvas.width, gl.canvas.height)
 
-// TODO: render models based on user interaction & create constraint
-const line = new Line()
-line.addVertex(new Vertex([50, 100], [1, 0, 0.7, 1]))
-line.addVertex(new Vertex([100, 300], [0, 1, 0, 1]))
-
-const square = new Square()
-square.addVertex(new Vertex([200, 100], [0, 1, 0, 0.5]))
-square.addVertex(new Vertex([200, 300], [0, 0, 1, 0.5]))
-square.addVertex(new Vertex([400, 300], [1, 0, 0, 0.5]))
-square.addVertex(new Vertex([400, 100], [0, 0, 0.5, 0.5]))
-square.addVertex(new Vertex([200, 100], [0, 1, 0, 0.5]))
-
-const rectangle = new Rectangle()
-rectangle.addVertex(new Vertex([500, 100], [0, 1, 0, 0.5]))
-rectangle.addVertex(new Vertex([500, 300], [0, 0, 0.5, 0.5]))
-rectangle.addVertex(new Vertex([800, 300], [1, 0, 0, 0.5]))
-rectangle.addVertex(new Vertex([800, 100], [0, 0, 0.5, 0.5]))
-rectangle.addVertex(new Vertex([500, 100], [0, 1, 0, 0.5]))
-
-const polygon = new Polygon()
-polygon.addVertex(new Vertex([1350, 200], [0, 1, 0, 0.5]))
-polygon.addVertex(new Vertex([900, 100], [1, 0, 0, 0.5]))
-polygon.addVertex(new Vertex([1400, 120], [0, 1, 0.5, 0.5]))
-polygon.addVertex(new Vertex([1020, 300], [0, 0, 1, 0.5]))
-polygon.addVertex(new Vertex([910, 200], [0, 0, 1, 0.5]))
-polygon.addVertex(new Vertex([905, 150], [0, 0, 1, 0.5]))
-
-// on click draw example
-const clickPolygon = new Polygon()
-const models = [line, square, rectangle, polygon, clickPolygon]
+const models: Model[] = []
+const vertexSelector = new Square()
 
 // Initialize selected model
 selectedModel = models[0]
@@ -129,6 +103,8 @@ const vertexDropdown = document.getElementById(
   'vertex-select'
 ) as HTMLSelectElement
 const colorPicker = document.getElementById('color-picker') as HTMLInputElement
+
+const scaleXInput = new ScaleXInput(canvas)
 
 // Initialize model dropdown
 if (modelDropdown) {
@@ -150,6 +126,8 @@ modelDropdown?.addEventListener('change', (e) => {
   adjustColorPicker()
 
   if (selectedModel) {
+    scaleXInput.removeListener()
+
     new TranslateXInput().addListener(
       canvas,
       selectedModel,
@@ -162,7 +140,8 @@ modelDropdown?.addEventListener('change', (e) => {
       adjustColorPicker,
       updateVertexDropdown
     )
-    new ScaleXInput().addListener(canvas, selectedModel)
+
+    scaleXInput.addListener(selectedModel)
   }
 })
 
@@ -241,6 +220,7 @@ canvas.addEventListener('mousedown', (e) => {
   const rect = canvas.getBoundingClientRect()
   const x = e.clientX - 100
   const y = rect.bottom - e.clientY
+
   switch (cursorType) {
     case CursorType.LINE:
       if (!isDrawing) {
@@ -272,6 +252,42 @@ canvas.addEventListener('mousedown', (e) => {
     case CursorType.POLYGON:
       models[4].addVertex(new Vertex([x, y]))
       break
+    case CursorType.SELECT: {
+      const hoverThreshold = 4
+
+      for (const model of models) {
+        if (
+          x >= model.getLeftmostX() - hoverThreshold &&
+          x <= model.getRightmostX() + hoverThreshold &&
+          y >= model.getBottommostY() - hoverThreshold &&
+          y <= model.getTopmostY() + hoverThreshold
+        ) {
+          for (const vertex of model.vertexList) {
+            if (
+              x >= vertex.coord[0] - hoverThreshold &&
+              x <= vertex.coord[0] + hoverThreshold &&
+              y >= vertex.coord[1] - hoverThreshold &&
+              y <= vertex.coord[1] + hoverThreshold
+            ) {
+              selectedModel = model
+              selectedVertex = vertex
+
+              modelDropdown.value = selectedModel.id
+              updateVertexDropdown()
+              if (selectedVertex) {
+                vertexDropdown.value = selectedVertex.id
+              }
+              adjustColorPicker()
+
+              isScaling = true
+              break
+            }
+          }
+
+          break
+        }
+      }
+    }
   }
 })
 
@@ -294,30 +310,88 @@ canvas.addEventListener('mousemove', (e) => {
       }
       case CursorType.RECTANGLE: {
         const rectangle = models[models.length - 1] as Rectangle
-        rectangle.updateVerticesWhenDrawing(x, y)
+        rectangle.updateVerticesWhenDrawing(x, y, canvas)
         break
       }
       case CursorType.POLYGON:
         break
     }
+  } else if (isScaling && selectedModel && selectedVertex) {
+    switch (true) {
+      case selectedModel instanceof Square: {
+        const sideLength = Math.max(
+          Math.abs(selectedVertex.coord[0] - selectedModel.getLeftmostX()),
+          Math.abs(selectedVertex.coord[0] - selectedModel.getRightmostX())
+        )
+
+        const farthestX = Math.max(
+          Math.abs(x - selectedModel.getLeftmostX()),
+          Math.abs(x - selectedModel.getRightmostX())
+        )
+        const farthestY = Math.max(
+          Math.abs(y - selectedModel.getTopmostY()),
+          Math.abs(y - selectedModel.getBottommostY())
+        )
+
+        const deltaX = Math.abs(x - selectedVertex.coord[0])
+        const deltaY = Math.abs(y - selectedVertex.coord[1])
+
+        let scaleX = 1
+        let scaleY = 1
+        let scale = 1
+        if (
+          x >= selectedModel.getLeftmostX() &&
+          x <= selectedModel.getRightmostX() &&
+          y >= selectedModel.getBottommostY() &&
+          y <= selectedModel.getTopmostY()
+        ) {
+          scaleX = Math.abs((farthestX - deltaX) / sideLength)
+          scaleY = Math.abs((farthestY - deltaY) / sideLength)
+
+          scale = Math.min(scaleX, scaleY)
+        } else {
+          scaleX = Math.abs((farthestX + deltaX) / sideLength)
+          scaleY = Math.abs((farthestY + deltaY) / sideLength)
+
+          scale = Math.max(scaleX, scaleY)
+        }
+
+        selectedModel.updateXScale(Math.abs(scale), canvas)
+        break
+      }
+    }
   } else {
     if (cursorType === CursorType.SELECT) {
-      const hoverThreshold = 7
-      models.forEach((model) => {
-        model.vertexList.forEach((vertex, idx) => {
-          if (idx === model.vertexList.length - 1) return
-          if (
-            x >= vertex.coord[0] - hoverThreshold &&
-            x <= vertex.coord[0] + hoverThreshold &&
-            y >= vertex.coord[1] - hoverThreshold &&
-            y <= vertex.coord[1] + hoverThreshold
-          ) {
-            document.body.style.cursor = 'pointer'
-          } else {
-            document.body.style.cursor = 'default'
+      const hoverThreshold = 4
+
+      for (const model of models) {
+        if (
+          x >= model.getLeftmostX() - hoverThreshold &&
+          x <= model.getRightmostX() + hoverThreshold &&
+          y >= model.getBottommostY() - hoverThreshold &&
+          y <= model.getTopmostY() + hoverThreshold
+        ) {
+          for (const vertex of model.vertexList) {
+            if (
+              x >= vertex.coord[0] - hoverThreshold &&
+              x <= vertex.coord[0] + hoverThreshold &&
+              y >= vertex.coord[1] - hoverThreshold &&
+              y <= vertex.coord[1] + hoverThreshold
+            ) {
+              document.body.style.cursor = 'pointer'
+              break
+            } else {
+              document.body.style.cursor = 'default'
+            }
           }
-        })
-      })
+
+          break
+        } else {
+          vertexSelector.setVertexRef(new Vertex([0, 0]))
+          vertexSelector.updateVerticesWhenDrawing(0, 0, canvas)
+          document.body.style.cursor = 'default'
+        }
+      }
     }
   }
 })
@@ -326,11 +400,11 @@ canvas.addEventListener('click', (e) => {
   const rect = canvas.getBoundingClientRect()
   const x = e.clientX - 100
   const y = rect.bottom - e.clientY
-  console.log(x, y)
+
   if (isDrawing) return
   switch (cursorType) {
     case CursorType.SELECT: {
-      const hoverThreshold = 7
+      const hoverThreshold = 4
       for (const model of models) {
         let isVertexSelected = false
 
@@ -430,6 +504,10 @@ canvas.addEventListener('mouseup', (e) => {
     }
     case CursorType.POLYGON:
       break
+    case CursorType.SELECT:
+      isScaling = false
+      selectedModel?.resetXScale(canvas)
+      break
   }
 })
 
@@ -446,6 +524,15 @@ export const renderAll = (): void => {
       matUniLoc
     )
   })
+
+  vertexSelector.render(
+    gl,
+    posBuffer,
+    posAttrLoc,
+    colorBuffer,
+    colorAttrLoc,
+    matUniLoc
+  )
 
   window.requestAnimationFrame(renderAll)
 }

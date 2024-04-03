@@ -10,10 +10,10 @@ export default abstract class Model {
     [0, 0, 1]
   ])
 
-  private rightmostX: number = 0.0
-  private leftmostX: number = 0.0
-  private topmostY: number = 0.0
-  private bottommostY: number = 0.0
+  protected rightmostX: number = 0.0
+  protected leftmostX: number = 0.0
+  protected topmostY: number = 0.0
+  protected bottommostY: number = 0.0
 
   constructor (id: string) {
     this.id = id
@@ -36,6 +36,22 @@ export default abstract class Model {
 
   addVertex (vertex: Vertex): void {
     this.vertexList.push(vertex)
+  }
+
+  public getRightmostX (): number {
+    return this.rightmostX
+  }
+
+  public getLeftmostX (): number {
+    return this.leftmostX
+  }
+
+  public getTopmostY (): number {
+    return this.topmostY
+  }
+
+  public getBottommostY (): number {
+    return this.bottommostY
   }
 
   setVertexList (
@@ -83,68 +99,9 @@ export default abstract class Model {
     this.transformMat.set([2, 1], ty)
   }
 
-  updateXScale (sx: number, canvasWidth: number): void {
-    const clipSpaceRightmost = (this.rightmostX * 2.0) / canvasWidth - 1.0
-    const clipSpaceLeftmost = (this.leftmostX * 2.0) / canvasWidth - 1.0
+  abstract updateXScale (sx: number, canvas: HTMLCanvasElement): void
 
-    const pivotX = (clipSpaceRightmost + clipSpaceLeftmost) / 2.0
-
-    let transformMat = matrix([
-      [1, 0, 0],
-      [0, 1, 0],
-      [0, 0, 1]
-    ])
-    const translateMat = [
-      [1, 0, 0],
-      [0, 1, 0],
-      [-pivotX, 0, 1]
-    ]
-    const scaleMat = [
-      [sx, 0, 0],
-      [0, 1, 0],
-      [0, 0, 1]
-    ]
-    const reverseMat = [
-      [1, 0, 0],
-      [0, 1, 0],
-      [pivotX, 0, 1]
-    ]
-    transformMat = multiply(transformMat, translateMat)
-    transformMat = multiply(transformMat, scaleMat)
-    transformMat = multiply(transformMat, reverseMat)
-
-    this.transformMat = transformMat
-  }
-
-  resetXScale (canvasWidth: number): void {
-    this.vertexList = this.vertexList.map((vertex) => {
-      const clipSpaceX = (vertex.coord[0] * 2.0) / canvasWidth - 1.0
-      const newClipSpaceX =
-        clipSpaceX * this.transformMat.get([0, 0]) +
-        this.transformMat.get([2, 0])
-      const newX = ((newClipSpaceX + 1.0) * canvasWidth) / 2.0
-
-      return new Vertex([newX, vertex.coord[1]], vertex.color)
-    })
-
-    this.rightmostX = 0
-    this.leftmostX = canvasWidth
-
-    for (const vertex of this.vertexList) {
-      if (vertex.coord[0] > this.rightmostX) {
-        this.rightmostX = vertex.coord[0]
-      }
-      if (vertex.coord[0] < this.leftmostX) {
-        this.leftmostX = vertex.coord[0]
-      }
-    }
-
-    this.transformMat = matrix([
-      [1, 0, 0],
-      [0, 1, 0],
-      [0, 0, 1]
-    ])
-  }
+  abstract resetXScale (canvas: HTMLCanvasElement): void
 
   resetXTranslate (canvasWidth: number): void {
     this.vertexList = this.vertexList.map((vertex) => {

@@ -5,24 +5,45 @@ export default class ScaleXInput {
     'scale-x-input'
   ) as HTMLInputElement
 
-  addListener (canvas: HTMLCanvasElement, selectedModel: Model): void {
+  private selectedModel: Model | null = null
+
+  constructor (private readonly canvas: HTMLCanvasElement) {}
+
+  private readonly onInput = (e: any): void => {
+    if (this.selectedModel) {
+      console.log('select', this.selectedModel.id)
+      this.selectedModel.updateXScale(
+        parseFloat(e.target.value as string),
+        this.canvas
+      )
+    }
+  }
+
+  private readonly onMouseUp = (): void => {
+    if (this.selectedModel) {
+      this.selectedModel.resetXScale(this.canvas)
+
+      this.input.min = '0'
+      this.input.max = '5'
+      this.input.value = this.selectedModel
+        .getTransformMatArray()[0]
+        .toString()
+    }
+  }
+
+  addListener (selectedModel: Model): void {
     this.input.min = '0'
     this.input.max = '5'
     this.input.value = selectedModel.getTransformMatArray()[0].toString()
 
-    this.input.addEventListener('input', (e: any) => {
-      selectedModel.updateXScale(
-        parseFloat(e.target.value as string),
-        canvas.width
-      )
-    })
+    this.selectedModel = selectedModel
 
-    this.input.addEventListener('mouseup', () => {
-      selectedModel.resetXScale(canvas.width)
+    this.input.addEventListener('input', this.onInput)
+    this.input.addEventListener('mouseup', this.onMouseUp)
+  }
 
-      this.input.min = '0'
-      this.input.max = '5'
-      this.input.value = selectedModel.getTransformMatArray()[0].toString()
-    })
+  removeListener (): void {
+    this.input.removeEventListener('input', this.onInput)
+    this.input.removeEventListener('mouseup', this.onMouseUp)
   }
 }
