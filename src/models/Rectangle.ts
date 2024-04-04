@@ -6,8 +6,8 @@ export default class Rectangle extends Model {
   // TODO: create constraint
   private static count: number = 1
   private vertexRef: Vertex
-  private width: number = 0
-  private height: number = 0
+  public width: number = 0
+  public height: number = 0
 
   constructor (vertexRef?: Vertex) {
     super(`rectangle-${Rectangle.count}`)

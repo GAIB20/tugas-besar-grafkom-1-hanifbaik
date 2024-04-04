@@ -62,7 +62,7 @@
         <div id="button-container">
           <button
             id="line-btn"
-            class="text-xs w-full text-left bg-blue-200 py-2 px-3"
+            class="text-xs w-full text-left hover:bg-slate-200 py-2 px-3"
           >
             Line
           </button>
@@ -77,7 +77,7 @@
             id="rectangle-btn"
             class="text-xs w-full text-left hover:bg-slate-200 py-2 px-3"
           >
-            Rect
+            Rectangle
           </button>
           <button
             id="polygon-btn"
@@ -87,7 +87,7 @@
           </button>
           <button
             id="select-btn"
-            class="text-xs w-full text-left hover:bg-slate-200 py-2 px-3"
+            class="text-xs w-full text-left bg-blue-200 py-2 px-3"
           >
             Select
           </button>
@@ -114,10 +114,47 @@
         <div id="model-options-container">
           <button
             id="save-btn"
-            class="text-xs w-full text-left hover:bg-slate-200 py-2 px-3 hidden"
+            class="text-xs w-full text-left hover:bg-slate-200 py-2 px-3"
           >
             Save
           </button>
+
+          <div id="square-props" class="hidden">
+            <label for="square-size-input" class="text-xs w-full px-3">
+              Size
+            </label>
+            <div class="w-full px-3">
+              <input
+                id="square-size-input"
+                type="number"
+                class="w-full text-xs p-1 bg-blue-200 rounded-md"
+              />
+            </div>
+          </div>
+
+          <div id="rectangle-props" class="hidden">
+            <label for="rectangle-width-input" class="text-xs w-full px-3">
+              Width
+            </label>
+            <div class="w-full px-3">
+              <input
+                id="rectangle-width-input"
+                type="number"
+                class="w-full text-xs p-1 bg-blue-200 rounded-md"
+              />
+            </div>
+
+            <label for="rectangle-height-input" class="text-xs w-full px-3">
+              Height
+            </label>
+            <div class="w-full px-3">
+              <input
+                id="rectangle-height-input"
+                type="number"
+                class="w-full text-xs p-1 bg-blue-200 rounded-md"
+              />
+            </div>
+          </div>
         </div>
       </div>
       <canvas class="h-full w-[calc(100vw-100px)]" id="webgl-canvas"></canvas>

@@ -16,7 +16,7 @@ enum CursorType {
 }
 
 //* GLOBAL VARIABLES
-let cursorType: CursorType = CursorType.LINE
+let cursorType: CursorType = CursorType.SELECT
 let isDrawing: boolean = false
 let isScaling: boolean = false
 let isMoving: boolean = false
@@ -220,6 +220,8 @@ function onCanvasMouseMove (e: MouseEvent): void {
         }
 
         scale = Math.max(scaleX, scaleY)
+        selectedModel.size = sideLength * scale
+        squareSizeInput.value = selectedModel.size.toString()
         selectedModel.scale(Math.abs(scale), Math.abs(scale), canvas)
         break
       }
@@ -262,6 +264,15 @@ function onCanvasMouseMove (e: MouseEvent): void {
         }
 
         selectedModel.scale(Math.abs(scaleX), Math.abs(scaleY), canvas)
+
+        if (selectedModel instanceof Rectangle) {
+          selectedModel.width = lengthX * scaleX
+          selectedModel.height = lengthY * scaleY
+
+          rectangleWidthInput.value = selectedModel.width.toString()
+          rectangleHeightInput.value = selectedModel.height.toString()
+        }
+
         break
       }
     }
@@ -589,6 +600,39 @@ function onLoadButtonClick (): void {
   document.body.removeChild(input)
 }
 
+function onSquareSizeInput (e: Event): void {
+  if (selectedModel instanceof Square && +(e.target as HTMLInputElement).value > 0) {
+    const prevSize = selectedModel.size
+    const scale = parseFloat((e.target as HTMLInputElement).value) / prevSize
+
+    selectedModel.size = parseFloat((e.target as HTMLInputElement).value)
+    selectedModel.scale(Math.abs(scale), Math.abs(scale), canvas)
+    selectedModel.resetScale(canvas)
+  }
+}
+
+function onRectangleWidthInput (e: Event): void {
+  if (selectedModel instanceof Rectangle && +(e.target as HTMLInputElement).value > 0) {
+    const prevWidth = selectedModel.width
+    const scale = parseFloat((e.target as HTMLInputElement).value) / prevWidth
+
+    selectedModel.width = parseFloat((e.target as HTMLInputElement).value)
+    selectedModel.scale(Math.abs(scale), 1, canvas)
+    selectedModel.resetScale(canvas)
+  }
+}
+
+function onRectangleHeightInput (e: Event): void {
+  if (selectedModel instanceof Rectangle && +(e.target as HTMLInputElement).value > 0) {
+    const prevHeight = selectedModel.height
+    const scale = parseFloat((e.target as HTMLInputElement).value) / prevHeight
+
+    selectedModel.height = parseFloat((e.target as HTMLInputElement).value)
+    selectedModel.scale(1, Math.abs(scale), canvas)
+    selectedModel.resetScale(canvas)
+  }
+}
+
 //* UTILITY FUNCTIONS
 function adjustColorPicker (): void {
   if (selectedVertex && colorPicker) {
@@ -631,9 +675,22 @@ function updateVertexDropdown (): void {
     vertexDropdown.appendChild(new Option('All Vertex', undefined))
 
     saveBtn.classList.remove('hidden')
+    if (selectedModel.id.startsWith('square')) {
+      squareSizeInput.value = (selectedModel as Square).size.toString()
+      squareProps.classList.remove('hidden')
+
+      rectangleProps.classList.add('hidden')
+    } if (selectedModel.id.startsWith('rectangle')) {
+      rectangleWidthInput.value = (selectedModel as Rectangle).width.toString()
+      rectangleHeightInput.value = (selectedModel as Rectangle).height.toString()
+      rectangleProps.classList.remove('hidden')
+
+      squareProps.classList.add('hidden')
+    }
   }
 }
 
+//* INITIALIZE WEBGL CANVAS
 const canvasElmt = document.getElementById('webgl-canvas')
 if (!canvasElmt) {
   throw Error('Canvas not found')
@@ -698,6 +755,7 @@ const clickPolygon = new Polygon()
 // Initialize selected model
 selectedModel = models[0]
 
+//* DOM MANIPULATION
 const modelDropdown = document.getElementById(
   'model-select'
 ) as HTMLSelectElement
@@ -720,6 +778,19 @@ const selectBtn = document.getElementById('select-btn') as HTMLButtonElement
 const saveBtn = document.getElementById('save-btn') as HTMLButtonElement
 const loadBtn = document.getElementById('load-btn') as HTMLButtonElement
 
+const squareSizeInput = document.getElementById(
+  'square-size-input'
+) as HTMLInputElement
+const squareProps = document.getElementById('square-props') as HTMLDivElement
+
+const rectangleWidthInput = document.getElementById(
+  'rectangle-width-input'
+) as HTMLInputElement
+const rectangleHeightInput = document.getElementById(
+  'rectangle-height-input'
+) as HTMLInputElement
+const rectangleProps = document.getElementById('rectangle-props') as HTMLDivElement
+
 modelDropdown.addEventListener('change', onModelDropdownChange)
 colorPicker.addEventListener('input', onColorPickerInput)
 vertexDropdown.addEventListener('change', onVertexDropdownChange)
@@ -733,6 +804,10 @@ selectBtn.addEventListener('click', onButtonClick(CursorType.SELECT))
 
 saveBtn.addEventListener('click', onSaveButtonClick)
 loadBtn.addEventListener('click', onLoadButtonClick)
+
+squareSizeInput.addEventListener('input', onSquareSizeInput)
+rectangleWidthInput.addEventListener('input', onRectangleWidthInput)
+rectangleHeightInput.addEventListener('input', onRectangleHeightInput)
 
 canvas.addEventListener('mousedown', onCanvasMouseDown)
 canvas.addEventListener('mousemove', onCanvasMouseMove)

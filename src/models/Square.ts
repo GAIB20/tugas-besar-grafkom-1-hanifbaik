@@ -5,6 +5,7 @@ import { matrix } from 'mathjs'
 export default class Square extends Model {
   private static count: number = 1
   public readonly vertexRef: Vertex
+  public size: number = 0
 
   constructor (vertexRef?: Vertex) {
     super(`square-${Square.count}`)
@@ -26,6 +27,8 @@ export default class Square extends Model {
         el.color as number[]
       )
     })
+    square.size = object.size
+
     square.rightmostX = object.rightmostX
     square.leftmostX = object.leftmostX
     square.topmostY = object.topmostY
@@ -83,5 +86,6 @@ export default class Square extends Model {
       canvas.width,
       canvas.height
     )
+    this.size = length
   }
 }
