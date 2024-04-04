@@ -1,5 +1,6 @@
 import Model from '@/primitives/Model'
 import Vertex from '@/primitives/Vertex'
+import { matrix } from 'mathjs'
 
 export default class Square extends Model {
   private static count: number = 1
@@ -9,6 +10,28 @@ export default class Square extends Model {
     super(`square-${Square.count}`)
     Square.count++
     this.vertexRef = vertexRef ?? new Vertex([0, 0])
+  }
+
+  static fromObject (object: any): Square {
+    const vertexRef = new Vertex(
+      object.vertexRef.coord as number[],
+      object.vertexRef.color as number[]
+    )
+
+    const square = new Square(vertexRef)
+    square.transformMat = matrix(object.transformMat.data as number[][])
+    square.vertexList = object.vertexList.map((el: any) => {
+      return new Vertex(
+        el.coord as number[],
+        el.color as number[]
+      )
+    })
+    square.rightmostX = object.rightmostX
+    square.leftmostX = object.leftmostX
+    square.topmostY = object.topmostY
+    square.bottommostY = object.bottommostY
+
+    return square
   }
 
   addVertex (vertex: Vertex): void {

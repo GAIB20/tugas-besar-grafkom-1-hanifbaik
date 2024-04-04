@@ -139,6 +139,15 @@ function onCanvasMouseDown (e: MouseEvent): void {
 
           if (!isScaling) {
             isMoving = true
+
+            selectedVertex = selectedModel.vertexList[0]
+            modelDropdown.value = selectedModel.id
+            updateVertexDropdown()
+            if (selectedVertex) {
+              vertexDropdown.value = selectedVertex.id
+            }
+            adjustColorPicker()
+
             moveReference.coord = [x, y]
           }
 
@@ -389,7 +398,19 @@ function onCanvasMouseUp (e: MouseEvent): void {
       break
     case CursorType.SQUARE: {
       isDrawing = false
-      // const square = selectedModel as Square
+
+      // Update selected model and vertex
+      selectedModel = models[models.length - 1]
+      const square = selectedModel as Square
+      selectedVertex = square.getVertexRef()
+
+      // Update UI for dropdowns and color picker
+      modelDropdown.value = selectedModel.id
+      updateVertexDropdown()
+      if (selectedVertex) {
+        vertexDropdown.value = selectedVertex.id
+      }
+      adjustColorPicker()
       break
     }
     case CursorType.RECTANGLE: {
@@ -449,6 +470,19 @@ function onButtonContainerClick (e: MouseEvent): void {
     for (const vertex of clickPolygon.vertexList) {
       clickPolygon.deleteVertex(vertex)
     }
+
+    // Update selected model and vertex
+    selectedModel = models[models.length - 1]
+    const polygon = selectedModel as Polygon
+    selectedVertex = polygon.vertexList[0]
+
+    // Update UI for dropdowns and color picker
+    modelDropdown.value = selectedModel.id
+    updateVertexDropdown()
+    if (selectedVertex) {
+      vertexDropdown.value = selectedVertex.id
+    }
+    adjustColorPicker()
   }
 
   Array.from(buttonConttainer.children).forEach((c) => {
@@ -460,6 +494,99 @@ function onButtonContainerClick (e: MouseEvent): void {
       c.classList.add('hover:bg-slate-200')
     }
   })
+}
+
+function onSaveButtonClick (): void {
+  const file = new File(
+    [JSON.stringify(selectedModel)],
+    `${selectedModel?.id ?? 'model'}.json`,
+    {
+      type: 'application/json'
+    }
+  )
+
+  const url = URL.createObjectURL(file)
+
+  const a = document.createElement('a')
+  a.href = url
+  a.download = file.name
+
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+
+  URL.revokeObjectURL(url)
+}
+
+function onLoadButtonClick (): void {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'application/json'
+
+  input.addEventListener('change', () => {
+    if (input.files) {
+      const file = input.files[0]
+
+      const reader = new FileReader()
+      reader.onload = () => {
+        const object = JSON.parse(reader.result as string)
+        if ((object.id as string).startsWith('square')) {
+          const square = Square.fromObject(object)
+          models.push(square)
+          modelDropdown?.appendChild(
+            new Option(
+              models[models.length - 1].id,
+              models[models.length - 1].id
+            )
+          )
+        } else if ((object.id as string).startsWith('rectangle')) {
+          const rectangle = Rectangle.fromObject(object)
+          models.push(rectangle)
+          modelDropdown?.appendChild(
+            new Option(
+              models[models.length - 1].id,
+              models[models.length - 1].id
+            )
+          )
+        } else if ((object.id as string).startsWith('polygon')) {
+          const polygon = Polygon.fromObject(object)
+          models.push(polygon)
+          modelDropdown?.appendChild(
+            new Option(
+              models[models.length - 1].id,
+              models[models.length - 1].id
+            )
+          )
+        } else if ((object.id as string).startsWith('line')) {
+          const line = Line.fromObject(object)
+          models.push(line)
+          modelDropdown?.appendChild(
+            new Option(
+              models[models.length - 1].id,
+              models[models.length - 1].id
+            )
+          )
+        }
+
+        // Update selected model and vertex
+        selectedModel = models[models.length - 1]
+        selectedVertex = selectedModel.vertexList[0]
+
+        // Update UI for dropdowns and color picker
+        modelDropdown.value = selectedModel.id
+        updateVertexDropdown()
+        if (selectedVertex) {
+          vertexDropdown.value = selectedVertex.id
+        }
+        adjustColorPicker()
+      }
+      reader.readAsText(file)
+    }
+  })
+
+  document.body.appendChild(input)
+  input.click()
+  document.body.removeChild(input)
 }
 
 //* UTILITY FUNCTIONS
@@ -502,6 +629,8 @@ function updateVertexDropdown (): void {
 
     // Add all vertex option
     vertexDropdown.appendChild(new Option('All Vertex', undefined))
+
+    saveBtn.classList.remove('hidden')
   }
 }
 
@@ -588,6 +717,9 @@ const rectangleBtn = document.getElementById(
 const polygonBtn = document.getElementById('polygon-btn') as HTMLButtonElement
 const selectBtn = document.getElementById('select-btn') as HTMLButtonElement
 
+const saveBtn = document.getElementById('save-btn') as HTMLButtonElement
+const loadBtn = document.getElementById('load-btn') as HTMLButtonElement
+
 modelDropdown.addEventListener('change', onModelDropdownChange)
 colorPicker.addEventListener('input', onColorPickerInput)
 vertexDropdown.addEventListener('change', onVertexDropdownChange)
@@ -598,6 +730,9 @@ squareBtn.addEventListener('click', onButtonClick(CursorType.SQUARE))
 rectangleBtn.addEventListener('click', onButtonClick(CursorType.RECTANGLE))
 polygonBtn.addEventListener('click', onButtonClick(CursorType.POLYGON))
 selectBtn.addEventListener('click', onButtonClick(CursorType.SELECT))
+
+saveBtn.addEventListener('click', onSaveButtonClick)
+loadBtn.addEventListener('click', onLoadButtonClick)
 
 canvas.addEventListener('mousedown', onCanvasMouseDown)
 canvas.addEventListener('mousemove', onCanvasMouseMove)

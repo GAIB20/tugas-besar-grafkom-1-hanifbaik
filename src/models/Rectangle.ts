@@ -1,5 +1,6 @@
 import Model from '@/primitives/Model'
 import Vertex from '@/primitives/Vertex'
+import { matrix } from 'mathjs'
 
 export default class Rectangle extends Model {
   // TODO: create constraint
@@ -12,6 +13,31 @@ export default class Rectangle extends Model {
     super(`rectangle-${Rectangle.count}`)
     Rectangle.count++
     this.vertexRef = vertexRef ?? new Vertex([0, 0])
+  }
+
+  static fromObject (object: any): Rectangle {
+    const vertexRef = new Vertex(
+      object.vertexRef.coord as number[],
+      object.vertexRef.color as number[]
+    )
+
+    const rectangle = new Rectangle(vertexRef)
+    rectangle.transformMat = matrix(object.transformMat.data as number[][])
+    rectangle.vertexList = object.vertexList.map((el: any) => {
+      return new Vertex(
+        el.coord as number[],
+        el.color as number[]
+      )
+    })
+    rectangle.width = object.width
+    rectangle.height = object.height
+
+    rectangle.rightmostX = object.rightmostX
+    rectangle.leftmostX = object.leftmostX
+    rectangle.topmostY = object.topmostY
+    rectangle.bottommostY = object.bottommostY
+
+    return rectangle
   }
 
   addVertex (vertex: Vertex): void {

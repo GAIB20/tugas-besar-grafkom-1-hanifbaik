@@ -1,5 +1,6 @@
 import Model from '@/primitives/Model'
 import Vertex from '@/primitives/Vertex'
+import { matrix } from 'mathjs'
 
 enum Orientation {
   COLLINEAR,
@@ -25,6 +26,28 @@ export default class Polygon extends Model {
       this.topmostY = polygon.topmostY
       this.bottommostY = polygon.bottommostY
     }
+  }
+
+  static fromObject (object: any): Polygon {
+    const polygon = new Polygon()
+    polygon.polarRef = new Vertex(
+      object.polarRef.coord as number[],
+      object.polarRef.color as number[]
+    )
+    polygon.transformMat = matrix(object.transformMat.data as number[][])
+    polygon.vertexList = object.vertexList.map((el: any) => {
+      return new Vertex(
+        el.coord as number[],
+        el.color as number[]
+      )
+    })
+
+    polygon.rightmostX = object.rightmostX
+    polygon.leftmostX = object.leftmostX
+    polygon.topmostY = object.topmostY
+    polygon.bottommostY = object.bottommostY
+
+    return polygon
   }
 
   addVertex (vertex: Vertex): void {
