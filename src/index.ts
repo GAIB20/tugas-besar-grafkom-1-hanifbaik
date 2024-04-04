@@ -40,6 +40,18 @@ function onModelDropdownChange (e: Event): void {
   selectedVertex = selectedModel?.vertexList[0]
   updateVertexDropdown()
   adjustColorPicker()
+
+  if (clickPolygon.vertexList.length > 0) {
+    models.push(new Polygon(clickPolygon))
+
+    modelDropdown?.appendChild(
+      new Option(models[models.length - 1].id, models[models.length - 1].id)
+    )
+
+    for (const vertex of clickPolygon.vertexList) {
+      clickPolygon.deleteVertex(vertex)
+    }
+  }
 }
 
 function onColorPickerInput (e: Event): void {
@@ -102,7 +114,12 @@ function onCanvasMouseDown (e: MouseEvent): void {
       }
       break
     case CursorType.POLYGON:
-      clickPolygon.addVertex(new Vertex([x, y]))
+      if (selectedModel instanceof Polygon) {
+        selectedModel.addVertex(new Vertex([x, y]))
+        updateVertexDropdown()
+      } else {
+        clickPolygon.addVertex(new Vertex([x, y]))
+      }
       break
     case CursorType.SELECT: {
       const hoverThreshold = 7
@@ -601,7 +618,10 @@ function onLoadButtonClick (): void {
 }
 
 function onSquareSizeInput (e: Event): void {
-  if (selectedModel instanceof Square && +(e.target as HTMLInputElement).value > 0) {
+  if (
+    selectedModel instanceof Square &&
+    +(e.target as HTMLInputElement).value > 0
+  ) {
     const prevSize = selectedModel.size
     const scale = parseFloat((e.target as HTMLInputElement).value) / prevSize
 
@@ -612,7 +632,10 @@ function onSquareSizeInput (e: Event): void {
 }
 
 function onRectangleWidthInput (e: Event): void {
-  if (selectedModel instanceof Rectangle && +(e.target as HTMLInputElement).value > 0) {
+  if (
+    selectedModel instanceof Rectangle &&
+    +(e.target as HTMLInputElement).value > 0
+  ) {
     const prevWidth = selectedModel.width
     const scale = parseFloat((e.target as HTMLInputElement).value) / prevWidth
 
@@ -623,13 +646,27 @@ function onRectangleWidthInput (e: Event): void {
 }
 
 function onRectangleHeightInput (e: Event): void {
-  if (selectedModel instanceof Rectangle && +(e.target as HTMLInputElement).value > 0) {
+  if (
+    selectedModel instanceof Rectangle &&
+    +(e.target as HTMLInputElement).value > 0
+  ) {
     const prevHeight = selectedModel.height
     const scale = parseFloat((e.target as HTMLInputElement).value) / prevHeight
 
     selectedModel.height = parseFloat((e.target as HTMLInputElement).value)
     selectedModel.scale(1, Math.abs(scale), canvas)
     selectedModel.resetScale(canvas)
+  }
+}
+
+function onPolyDeleteVertexClick (): void {
+  if (
+    selectedModel instanceof Polygon &&
+    selectedVertex &&
+    selectedModel.vertexList.length > 3
+  ) {
+    selectedModel.deleteVertex(selectedVertex)
+    updateVertexDropdown()
   }
 }
 
@@ -680,12 +717,21 @@ function updateVertexDropdown (): void {
       squareProps.classList.remove('hidden')
 
       rectangleProps.classList.add('hidden')
-    } if (selectedModel.id.startsWith('rectangle')) {
+      polygonProps.classList.add('hidden')
+    } else if (selectedModel.id.startsWith('rectangle')) {
       rectangleWidthInput.value = (selectedModel as Rectangle).width.toString()
-      rectangleHeightInput.value = (selectedModel as Rectangle).height.toString()
+      rectangleHeightInput.value = (
+        selectedModel as Rectangle
+      ).height.toString()
       rectangleProps.classList.remove('hidden')
 
       squareProps.classList.add('hidden')
+      polygonProps.classList.add('hidden')
+    } else if (selectedModel.id.startsWith('polygon')) {
+      polygonProps.classList.remove('hidden')
+
+      squareProps.classList.add('hidden')
+      rectangleProps.classList.add('hidden')
     }
   }
 }
@@ -789,7 +835,14 @@ const rectangleWidthInput = document.getElementById(
 const rectangleHeightInput = document.getElementById(
   'rectangle-height-input'
 ) as HTMLInputElement
-const rectangleProps = document.getElementById('rectangle-props') as HTMLDivElement
+const rectangleProps = document.getElementById(
+  'rectangle-props'
+) as HTMLDivElement
+
+const polyDeleteVertexBtn = document.getElementById(
+  'poly-delete-vertex-btn'
+) as HTMLButtonElement
+const polygonProps = document.getElementById('polygon-props') as HTMLDivElement
 
 modelDropdown.addEventListener('change', onModelDropdownChange)
 colorPicker.addEventListener('input', onColorPickerInput)
@@ -808,6 +861,7 @@ loadBtn.addEventListener('click', onLoadButtonClick)
 squareSizeInput.addEventListener('input', onSquareSizeInput)
 rectangleWidthInput.addEventListener('input', onRectangleWidthInput)
 rectangleHeightInput.addEventListener('input', onRectangleHeightInput)
+polyDeleteVertexBtn.addEventListener('click', onPolyDeleteVertexClick)
 
 canvas.addEventListener('mousedown', onCanvasMouseDown)
 canvas.addEventListener('mousemove', onCanvasMouseMove)
