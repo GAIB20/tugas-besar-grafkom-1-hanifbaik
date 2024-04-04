@@ -101,7 +101,7 @@ export default abstract class Model {
       const newClipSpaceY = clipSpaceY + this.transformMat.get([2, 1])
       const newY = ((newClipSpaceY + 1.0) * canvas.height) / 2.0
 
-      return new Vertex([newX, newY], vertex.color)
+      return new Vertex([newX, newY], vertex.color, vertex.id)
     })
 
     this.rightmostX = 0
@@ -181,7 +181,7 @@ export default abstract class Model {
         this.transformMat.get([2, 1])
       const newY = ((newClipSpaceY + 1.0) * canvas.height) / 2.0
 
-      return new Vertex([newX, newY], vertex.color)
+      return new Vertex([newX, newY], vertex.color, vertex.id)
     })
 
     this.rightmostX = 0
@@ -209,41 +209,6 @@ export default abstract class Model {
       [0, 1, 0],
       [0, 0, 1]
     ])
-  }
-
-  resetXTranslate (canvasWidth: number): void {
-    this.vertexList = this.vertexList.map((vertex) => {
-      const clipSpaceX = (vertex.coord[0] * 2.0) / canvasWidth - 1.0
-      const newClipSpaceX = clipSpaceX + this.transformMat.get([2, 0])
-      const newX = ((newClipSpaceX + 1.0) * canvasWidth) / 2.0
-
-      return new Vertex([newX, vertex.coord[1]], vertex.color)
-    })
-
-    this.rightmostX = 0
-    this.leftmostX = canvasWidth
-
-    for (const vertex of this.vertexList) {
-      if (vertex.coord[0] > this.rightmostX) {
-        this.rightmostX = vertex.coord[0]
-      }
-      if (vertex.coord[0] < this.leftmostX) {
-        this.leftmostX = vertex.coord[0]
-      }
-    }
-
-    this.transformMat.set([2, 0], 0)
-  }
-
-  resetYTranslate (canvasHeight: number): void {
-    this.vertexList = this.vertexList.map((vertex) => {
-      const clipSpaceY = (vertex.coord[1] * 2.0) / canvasHeight - 1.0
-      const newClipSpaceY = clipSpaceY + this.transformMat.get([2, 1])
-      const newY = ((newClipSpaceY + 1.0) * canvasHeight) / 2.0
-
-      return new Vertex([vertex.coord[0], newY], vertex.color)
-    })
-    this.transformMat.set([2, 1], 0)
   }
 
   render (

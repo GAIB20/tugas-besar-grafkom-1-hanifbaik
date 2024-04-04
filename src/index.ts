@@ -15,11 +15,13 @@ enum CursorType {
   POLYGON = 4,
 }
 
+//* GLOBAL VARIABLES
 let cursorType: CursorType = CursorType.LINE
 let isDrawing: boolean = false
 let isScaling: boolean = false
 let isMoving: boolean = false
-let moveReference = new Vertex([0, 0])
+const moveReference = new Vertex([0, 0])
+let selectedVertex: Vertex | undefined | null
 let selectedModel:
 | Model
 | Line
@@ -29,172 +31,44 @@ let selectedModel:
 | undefined
 | null
 
-let selectedVertex: Vertex | undefined | null
-
-const canvasElmt = document.getElementById('webgl-canvas')
-if (!canvasElmt) {
-  throw Error('Canvas not found')
-}
-
-const canvas = canvasElmt as HTMLCanvasElement
-const gl = canvas.getContext('webgl')
-if (gl === null) {
-  throw Error('WebGL not supported')
-}
-
-const vertexShaderSource =
-  document.getElementById('vertex-shader')?.textContent
-const fragmentShaderSource =
-  document.getElementById('fragment-shader')?.textContent
-if (!vertexShaderSource || !fragmentShaderSource) {
-  throw Error('Shader source not found')
-}
-
-const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource)
-const fragmentShader = createShader(
-  gl,
-  gl.FRAGMENT_SHADER,
-  fragmentShaderSource
-)
-
-const program = createProgram(gl, vertexShader, fragmentShader)
-
-const posAttrLoc = gl.getAttribLocation(program, 'a_position')
-const colorAttrLoc = gl.getAttribLocation(program, 'a_color')
-const matUniLoc = gl.getUniformLocation(program, 'u_matrix')
-const resUniLoc = gl.getUniformLocation(program, 'u_resolution')
-
-if (!matUniLoc || !resUniLoc) {
-  throw Error('Location not found')
-}
-
-const posBuffer = gl.createBuffer()
-const colorBuffer = gl.createBuffer()
-
-if (!posBuffer || !colorBuffer) {
-  throw Error('Buffer not created')
-}
-
-const width = canvas.clientWidth
-const height = canvas.clientHeight
-
-canvas.width = width
-canvas.height = height
-
-gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
-
-gl.clearColor(0, 0, 0, 0)
-gl.clear(gl.COLOR_BUFFER_BIT)
-
-gl.useProgram(program)
-gl.uniform2f(resUniLoc, gl.canvas.width, gl.canvas.height)
-
-const models: Model[] = []
-const clickPolygon = new Polygon()
-
-// Initialize selected model
-selectedModel = models[0]
-
-const modelDropdown = document.getElementById(
-  'model-select'
-) as HTMLSelectElement
-const vertexDropdown = document.getElementById(
-  'vertex-select'
-) as HTMLSelectElement
-const colorPicker = document.getElementById('color-picker') as HTMLInputElement
-
-// Initialize model dropdown
-if (modelDropdown) {
-  models.forEach((model) => {
-    const option = document.createElement('option')
-    option.value = model.id
-    option.text = model.id
-    modelDropdown.appendChild(option)
-  })
-}
-
+//* EVENT LISTENERS
 // Change selected model using dropdown
-modelDropdown?.addEventListener('change', (e) => {
+function onModelDropdownChange (e: Event): void {
   selectedModel = models.find(
     (model) => model.id === (e.target as HTMLSelectElement).value
   )
   selectedVertex = selectedModel?.vertexList[0]
   updateVertexDropdown()
   adjustColorPicker()
-})
+}
 
-if (colorPicker) {
-  colorPicker.addEventListener('input', (e) => {
-    // Parse hex color string to normalized RGB
-    const hexColor = (e.target as HTMLInputElement).value.replace('#', '')
-    const normR = parseInt(hexColor.substring(0, 2), 16) / 255
-    const normG = parseInt(hexColor.substring(2, 4), 16) / 255
-    const normB = parseInt(hexColor.substring(4, 6), 16) / 255
+function onColorPickerInput (e: Event): void {
+  // Parse hex color string to normalized RGB
+  const hexColor = (e.target as HTMLInputElement).value.replace('#', '')
+  const normR = parseInt(hexColor.substring(0, 2), 16) / 255
+  const normG = parseInt(hexColor.substring(2, 4), 16) / 255
+  const normB = parseInt(hexColor.substring(4, 6), 16) / 255
 
-    if (selectedVertex) {
-      // Set color of a vertex if a vertex is selected
-      selectedVertex.color = [normR, normG, normB, 1]
-    } else {
-      // Set all vertices of a model if no vertex is selected
-      selectedModel?.vertexList.forEach((vertex) => {
-        vertex.color = [normR, normG, normB, 1]
-      })
-    }
-  })
+  if (selectedVertex) {
+    // Set color of a vertex if a vertex is selected
+    selectedVertex.color = [normR, normG, normB, 1]
+  } else {
+    // Set all vertices of a model if no vertex is selected
+    selectedModel?.vertexList.forEach((vertex) => {
+      vertex.color = [normR, normG, normB, 1]
+    })
+  }
 }
 
 // Change selected vertex using dropdown
-vertexDropdown?.addEventListener('change', (e) => {
+function onVertexDropdownChange (e: Event): void {
   selectedVertex = selectedModel?.vertexList.find(
     (vertex) => vertex.id === (e.target as HTMLSelectElement).value
   )
   adjustColorPicker()
-})
-
-function adjustColorPicker (): void {
-  if (selectedVertex && colorPicker) {
-    const [r, g, b] = selectedVertex.color
-      .slice(0, 3)
-      .map((c) => Math.floor(c * 255))
-    const [strR, strG, strB] = [r, g, b].map((c) =>
-      c.toString(16).padStart(2, '0')
-    )
-    colorPicker.value = `#${strR}${strG}${strB}`
-  }
 }
 
-function updateVertexDropdown (): void {
-  if (vertexDropdown && selectedModel) {
-    // Reset vertex dropdown
-    vertexDropdown.innerHTML = ''
-
-    // Initialize vertex dropdown based on selected model
-    // let first: boolean = true
-    selectedModel.vertexList.forEach((vertex, idx) => {
-      if (
-        (selectedModel instanceof Square ||
-          selectedModel instanceof Rectangle ||
-          selectedModel instanceof Polygon) &&
-        idx === selectedModel.vertexList.length - 1
-      ) {
-        return
-      }
-
-      // Add vertex option
-      const option = document.createElement('option')
-      option.value = vertex.id
-      option.text = vertex.id
-      vertexDropdown.appendChild(option)
-      // first = false
-    })
-
-    // Add all vertex option
-    vertexDropdown.appendChild(new Option('All Vertex', undefined))
-  }
-}
-
-// TODO: implement for other shapes (remove if not used)
-canvas.addEventListener('mousedown', (e) => {
+function onCanvasMouseDown (e: MouseEvent): void {
   const rect = canvas.getBoundingClientRect()
   const x = e.clientX - 100
   const y = rect.bottom - e.clientY
@@ -231,7 +105,7 @@ canvas.addEventListener('mousedown', (e) => {
       clickPolygon.addVertex(new Vertex([x, y]))
       break
     case CursorType.SELECT: {
-      const hoverThreshold = 4
+      const hoverThreshold = 7
 
       for (const model of models) {
         if (
@@ -265,7 +139,7 @@ canvas.addEventListener('mousedown', (e) => {
 
           if (!isScaling) {
             isMoving = true
-            moveReference = new Vertex([x, y])
+            moveReference.coord = [x, y]
           }
 
           break
@@ -273,10 +147,9 @@ canvas.addEventListener('mousedown', (e) => {
       }
     }
   }
-})
+}
 
-// TODO: implement for other shapes (remove if not used)
-canvas.addEventListener('mousemove', (e) => {
+function onCanvasMouseMove (e: MouseEvent): void {
   const rect = canvas.getBoundingClientRect()
   const x = e.clientX - 100
   const y = rect.bottom - e.clientY
@@ -301,6 +174,7 @@ canvas.addEventListener('mousemove', (e) => {
         break
     }
   } else if (isScaling && selectedModel && selectedVertex) {
+    document.body.style.cursor = 'move'
     switch (true) {
       case selectedModel instanceof Square: {
         const sideLength = Math.max(
@@ -386,13 +260,18 @@ canvas.addEventListener('mousemove', (e) => {
     const xClipSpace = (x * 2.0) / canvas.width - 1.0
     const yClipSpace = (y * 2.0) / canvas.height - 1.0
 
-    const xReferenceClipSpace = (moveReference.coord[0] * 2.0) / canvas.width - 1.0
-    const yReferenceClipSpace = (moveReference.coord[1] * 2.0) / canvas.height - 1.0
+    const xReferenceClipSpace =
+      (moveReference.coord[0] * 2.0) / canvas.width - 1.0
+    const yReferenceClipSpace =
+      (moveReference.coord[1] * 2.0) / canvas.height - 1.0
 
-    selectedModel.translate(xClipSpace - xReferenceClipSpace, yClipSpace - yReferenceClipSpace)
+    selectedModel.translate(
+      xClipSpace - xReferenceClipSpace,
+      yClipSpace - yReferenceClipSpace
+    )
   } else {
     if (cursorType === CursorType.SELECT) {
-      const hoverThreshold = 4
+      const hoverThreshold = 7
 
       for (const model of models) {
         if (
@@ -401,6 +280,8 @@ canvas.addEventListener('mousemove', (e) => {
           y >= model.getBottommostY() - hoverThreshold &&
           y <= model.getTopmostY() + hoverThreshold
         ) {
+          let isOnVertex = false
+
           for (const vertex of model.vertexList) {
             if (
               x >= vertex.coord[0] - hoverThreshold &&
@@ -409,10 +290,13 @@ canvas.addEventListener('mousemove', (e) => {
               y <= vertex.coord[1] + hoverThreshold
             ) {
               document.body.style.cursor = 'pointer'
+              isOnVertex = true
               break
-            } else {
-              document.body.style.cursor = 'default'
             }
+          }
+
+          if (!isOnVertex) {
+            document.body.style.cursor = 'grab'
           }
 
           break
@@ -422,9 +306,9 @@ canvas.addEventListener('mousemove', (e) => {
       }
     }
   }
-})
+}
 
-canvas.addEventListener('click', (e) => {
+function onCanvasMouseClick (e: MouseEvent): void {
   const rect = canvas.getBoundingClientRect()
   const x = e.clientX - 100
   const y = rect.bottom - e.clientY
@@ -432,7 +316,7 @@ canvas.addEventListener('click', (e) => {
   if (isDrawing) return
   switch (cursorType) {
     case CursorType.SELECT: {
-      const hoverThreshold = 4
+      const hoverThreshold = 7
       for (const model of models) {
         let isVertexSelected = false
 
@@ -496,10 +380,9 @@ canvas.addEventListener('click', (e) => {
       break
     }
   }
-})
+}
 
-// TODO: implement for other shapes (remove if not used)
-canvas.addEventListener('mouseup', (e) => {
+function onCanvasMouseUp (e: MouseEvent): void {
   switch (cursorType) {
     case CursorType.LINE:
       isDrawing = false
@@ -538,15 +421,188 @@ canvas.addEventListener('mouseup', (e) => {
       }
 
       if (isMoving) {
-        moveReference = new Vertex([0, 0])
+        moveReference.coord = [0, 0]
         selectedModel?.resetTranslate(canvas)
       }
 
       isScaling = false
       isMoving = false
+      document.body.style.cursor = 'default'
       break
   }
-})
+}
+
+function onButtonClick (cursorTypeInput: CursorType): (e: MouseEvent) => void {
+  return (e: MouseEvent) => {
+    cursorType = cursorTypeInput
+  }
+}
+
+function onButtonContainerClick (e: MouseEvent): void {
+  if (clickPolygon.vertexList.length > 0) {
+    models.push(new Polygon(clickPolygon))
+
+    modelDropdown?.appendChild(
+      new Option(models[models.length - 1].id, models[models.length - 1].id)
+    )
+
+    for (const vertex of clickPolygon.vertexList) {
+      clickPolygon.deleteVertex(vertex)
+    }
+  }
+
+  Array.from(buttonConttainer.children).forEach((c) => {
+    if (c === e.target) {
+      c.classList.add('bg-blue-200')
+      c.classList.remove('hover:bg-slate-200')
+    } else {
+      c.classList.remove('bg-blue-200')
+      c.classList.add('hover:bg-slate-200')
+    }
+  })
+}
+
+//* UTILITY FUNCTIONS
+function adjustColorPicker (): void {
+  if (selectedVertex && colorPicker) {
+    const [r, g, b] = selectedVertex.color
+      .slice(0, 3)
+      .map((c) => Math.floor(c * 255))
+    const [strR, strG, strB] = [r, g, b].map((c) =>
+      c.toString(16).padStart(2, '0')
+    )
+    colorPicker.value = `#${strR}${strG}${strB}`
+  }
+}
+
+function updateVertexDropdown (): void {
+  if (vertexDropdown && selectedModel) {
+    // Reset vertex dropdown
+    vertexDropdown.innerHTML = ''
+
+    // Initialize vertex dropdown based on selected model
+    // let first: boolean = true
+    selectedModel.vertexList.forEach((vertex, idx) => {
+      if (
+        (selectedModel instanceof Square ||
+          selectedModel instanceof Rectangle ||
+          selectedModel instanceof Polygon) &&
+        idx === selectedModel.vertexList.length - 1
+      ) {
+        return
+      }
+
+      // Add vertex option
+      const option = document.createElement('option')
+      option.value = vertex.id
+      option.text = vertex.id
+      vertexDropdown.appendChild(option)
+      // first = false
+    })
+
+    // Add all vertex option
+    vertexDropdown.appendChild(new Option('All Vertex', undefined))
+  }
+}
+
+const canvasElmt = document.getElementById('webgl-canvas')
+if (!canvasElmt) {
+  throw Error('Canvas not found')
+}
+
+const canvas = canvasElmt as HTMLCanvasElement
+const gl = canvas.getContext('webgl')
+if (gl === null) {
+  throw Error('WebGL not supported')
+}
+
+const vertexShaderSource =
+  document.getElementById('vertex-shader')?.textContent
+const fragmentShaderSource =
+  document.getElementById('fragment-shader')?.textContent
+if (!vertexShaderSource || !fragmentShaderSource) {
+  throw Error('Shader source not found')
+}
+
+const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource)
+const fragmentShader = createShader(
+  gl,
+  gl.FRAGMENT_SHADER,
+  fragmentShaderSource
+)
+
+const program = createProgram(gl, vertexShader, fragmentShader)
+
+const posAttrLoc = gl.getAttribLocation(program, 'a_position')
+const colorAttrLoc = gl.getAttribLocation(program, 'a_color')
+const matUniLoc = gl.getUniformLocation(program, 'u_matrix')
+const resUniLoc = gl.getUniformLocation(program, 'u_resolution')
+
+if (!matUniLoc || !resUniLoc) {
+  throw Error('Location not found')
+}
+
+const posBuffer = gl.createBuffer()
+const colorBuffer = gl.createBuffer()
+
+if (!posBuffer || !colorBuffer) {
+  throw Error('Buffer not created')
+}
+
+const width = canvas.clientWidth
+const height = canvas.clientHeight
+
+canvas.width = width
+canvas.height = height
+
+gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+
+gl.clearColor(0, 0, 0, 0)
+gl.clear(gl.COLOR_BUFFER_BIT)
+
+gl.useProgram(program)
+gl.uniform2f(resUniLoc, gl.canvas.width, gl.canvas.height)
+
+const models: Model[] = []
+const clickPolygon = new Polygon()
+
+// Initialize selected model
+selectedModel = models[0]
+
+const modelDropdown = document.getElementById(
+  'model-select'
+) as HTMLSelectElement
+const vertexDropdown = document.getElementById(
+  'vertex-select'
+) as HTMLSelectElement
+const colorPicker = document.getElementById('color-picker') as HTMLInputElement
+
+const buttonConttainer = document.getElementById(
+  'button-container'
+) as HTMLDivElement
+const lineBtn = document.getElementById('line-btn') as HTMLButtonElement
+const squareBtn = document.getElementById('square-btn') as HTMLButtonElement
+const rectangleBtn = document.getElementById(
+  'rectangle-btn'
+) as HTMLButtonElement
+const polygonBtn = document.getElementById('polygon-btn') as HTMLButtonElement
+const selectBtn = document.getElementById('select-btn') as HTMLButtonElement
+
+modelDropdown.addEventListener('change', onModelDropdownChange)
+colorPicker.addEventListener('input', onColorPickerInput)
+vertexDropdown.addEventListener('change', onVertexDropdownChange)
+
+buttonConttainer.addEventListener('click', onButtonContainerClick)
+lineBtn.addEventListener('click', onButtonClick(CursorType.LINE))
+squareBtn.addEventListener('click', onButtonClick(CursorType.SQUARE))
+rectangleBtn.addEventListener('click', onButtonClick(CursorType.RECTANGLE))
+polygonBtn.addEventListener('click', onButtonClick(CursorType.POLYGON))
+selectBtn.addEventListener('click', onButtonClick(CursorType.SELECT))
+
+canvas.addEventListener('mousedown', onCanvasMouseDown)
+canvas.addEventListener('mousemove', onCanvasMouseMove)
+canvas.addEventListener('click', onCanvasMouseClick)
+canvas.addEventListener('mouseup', onCanvasMouseUp)
 
 export const renderAll = (): void => {
   gl.clear(gl.COLOR_BUFFER_BIT)
@@ -572,69 +628,6 @@ export const renderAll = (): void => {
   )
 
   window.requestAnimationFrame(renderAll)
-}
-
-// Buttons
-const lineBtn = document.getElementById('line-btn')
-if (lineBtn) {
-  lineBtn.addEventListener('click', () => {
-    cursorType = CursorType.LINE
-  })
-}
-
-const buttonConttainer = document.getElementById('button-container')
-if (buttonConttainer) {
-  buttonConttainer.addEventListener('click', (e) => {
-    if (clickPolygon.vertexList.length > 0) {
-      models.push(new Polygon(clickPolygon))
-
-      modelDropdown?.appendChild(
-        new Option(models[models.length - 1].id, models[models.length - 1].id)
-      )
-
-      for (const vertex of clickPolygon.vertexList) {
-        clickPolygon.deleteVertex(vertex)
-      }
-    }
-
-    Array.from(buttonConttainer.children).forEach((c) => {
-      if (c === e.target) {
-        c.classList.add('bg-blue-200')
-        c.classList.remove('hover:bg-slate-200')
-      } else {
-        c.classList.remove('bg-blue-200')
-        c.classList.add('hover:bg-slate-200')
-      }
-    })
-  })
-}
-
-const squareBtn = document.getElementById('square-btn')
-if (squareBtn) {
-  squareBtn.addEventListener('click', () => {
-    cursorType = CursorType.SQUARE
-  })
-}
-
-const rectangleBtn = document.getElementById('rectangle-btn')
-if (rectangleBtn) {
-  rectangleBtn.addEventListener('click', () => {
-    cursorType = CursorType.RECTANGLE
-  })
-}
-
-const polygonBtn = document.getElementById('polygon-btn')
-if (polygonBtn) {
-  polygonBtn.addEventListener('click', () => {
-    cursorType = CursorType.POLYGON
-  })
-}
-
-const selectBtn = document.getElementById('select-btn')
-if (selectBtn) {
-  selectBtn.addEventListener('click', () => {
-    cursorType = CursorType.SELECT
-  })
 }
 
 document.addEventListener('DOMContentLoaded', renderAll)
