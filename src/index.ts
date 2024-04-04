@@ -183,7 +183,7 @@ function onCanvasMouseMove (e: MouseEvent): void {
     switch (cursorType) {
       case CursorType.LINE: {
         const line = models[models.length - 1] as Line
-        line.updateVerticesWhenDrawing(x, y)
+        line.updateVerticesWhenDrawing(x, y, canvas)
         break
       }
       case CursorType.SQUARE: {
@@ -421,9 +421,23 @@ function onCanvasMouseClick (e: MouseEvent): void {
 
 function onCanvasMouseUp (e: MouseEvent): void {
   switch (cursorType) {
-    case CursorType.LINE:
+    case CursorType.LINE: {
       isDrawing = false
+
+      // Update selected model and vertex
+      selectedModel = models[models.length - 1]
+      const line = selectedModel as Line
+      selectedVertex = line.getVertexRef()
+
+      // Update UI for dropdowns and color picker
+      modelDropdown.value = selectedModel.id
+      updateVertexDropdown()
+      if (selectedVertex) {
+        vertexDropdown.value = selectedVertex.id
+      }
+      adjustColorPicker()
       break
+    }
     case CursorType.SQUARE: {
       isDrawing = false
 
@@ -670,6 +684,20 @@ function onPolyDeleteVertexClick (): void {
   }
 }
 
+function onLineLengthInput (e: Event): void {
+  if (
+    selectedModel instanceof Line &&
+    +(e.target as HTMLInputElement).value > 0
+  ) {
+    const prevLength = selectedModel.length
+    const scale = parseFloat((e.target as HTMLInputElement).value) / prevLength
+
+    selectedModel.length = parseFloat((e.target as HTMLInputElement).value)
+    selectedModel.scale(Math.abs(scale), Math.abs(scale), canvas)
+    selectedModel.resetScale(canvas)
+  }
+}
+
 //* UTILITY FUNCTIONS
 function adjustColorPicker (): void {
   if (selectedVertex && colorPicker) {
@@ -718,6 +746,7 @@ function updateVertexDropdown (): void {
 
       rectangleProps.classList.add('hidden')
       polygonProps.classList.add('hidden')
+      lineProps.classList.add('hidden')
     } else if (selectedModel.id.startsWith('rectangle')) {
       rectangleWidthInput.value = (selectedModel as Rectangle).width.toString()
       rectangleHeightInput.value = (
@@ -727,11 +756,20 @@ function updateVertexDropdown (): void {
 
       squareProps.classList.add('hidden')
       polygonProps.classList.add('hidden')
+      lineProps.classList.add('hidden')
     } else if (selectedModel.id.startsWith('polygon')) {
       polygonProps.classList.remove('hidden')
 
       squareProps.classList.add('hidden')
       rectangleProps.classList.add('hidden')
+      lineProps.classList.add('hidden')
+    } else if (selectedModel.id.startsWith('line')) {
+      lineLengthInput.value = (selectedModel as Line).length.toString()
+      lineProps.classList.remove('hidden')
+
+      squareProps.classList.add('hidden')
+      rectangleProps.classList.add('hidden')
+      polygonProps.classList.add('hidden')
     }
   }
 }
@@ -824,6 +862,11 @@ const selectBtn = document.getElementById('select-btn') as HTMLButtonElement
 const saveBtn = document.getElementById('save-btn') as HTMLButtonElement
 const loadBtn = document.getElementById('load-btn') as HTMLButtonElement
 
+const lineLengthInput = document.getElementById(
+  'line-length-input'
+) as HTMLInputElement
+const lineProps = document.getElementById('line-props') as HTMLDivElement
+
 const squareSizeInput = document.getElementById(
   'square-size-input'
 ) as HTMLInputElement
@@ -858,6 +901,7 @@ selectBtn.addEventListener('click', onButtonClick(CursorType.SELECT))
 saveBtn.addEventListener('click', onSaveButtonClick)
 loadBtn.addEventListener('click', onLoadButtonClick)
 
+lineLengthInput.addEventListener('input', onLineLengthInput)
 squareSizeInput.addEventListener('input', onSquareSizeInput)
 rectangleWidthInput.addEventListener('input', onRectangleWidthInput)
 rectangleHeightInput.addEventListener('input', onRectangleHeightInput)

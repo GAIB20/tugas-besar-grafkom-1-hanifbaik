@@ -6,6 +6,7 @@ export default class Line extends Model {
   // TODO: create constraint
   private static count: number = 1
   private readonly vertexRef: Vertex
+  public length: number = 0
 
   constructor (vertexRef?: Vertex) {
     super(`line-${Line.count}`)
@@ -19,20 +20,19 @@ export default class Line extends Model {
       object.vertexRef.color as number[]
     )
 
-    const square = new Line(vertexRef)
-    square.transformMat = matrix(object.transformMat.data as number[][])
-    square.vertexList = object.vertexList.map((el: any) => {
-      return new Vertex(
-        el.coord as number[],
-        el.color as number[]
-      )
+    const line = new Line(vertexRef)
+    line.transformMat = matrix(object.transformMat.data as number[][])
+    line.vertexList = object.vertexList.map((el: any) => {
+      return new Vertex(el.coord as number[], el.color as number[])
     })
-    square.rightmostX = object.rightmostX
-    square.leftmostX = object.leftmostX
-    square.topmostY = object.topmostY
-    square.bottommostY = object.bottommostY
+    line.length = object.length
 
-    return square
+    line.rightmostX = object.rightmostX
+    line.leftmostX = object.leftmostX
+    line.topmostY = object.topmostY
+    line.bottommostY = object.bottommostY
+
+    return line
   }
 
   addVertex (vertex: Vertex): void {
@@ -43,7 +43,22 @@ export default class Line extends Model {
     return gl.LINES
   }
 
-  updateVerticesWhenDrawing (x: number, y: number): void {
-    this.vertexList = [this.vertexRef, new Vertex([x, y])]
+  getVertexRef (): Vertex {
+    return this.vertexRef
+  }
+
+  updateVerticesWhenDrawing (
+    x: number,
+    y: number,
+    canvas: HTMLCanvasElement
+  ): void {
+    super.setVertexList(
+      [this.vertexRef, new Vertex([x, y])],
+      canvas.width,
+      canvas.height
+    )
+    this.length = Math.sqrt(
+      (x - this.vertexRef.coord[0]) ** 2 + (y - this.vertexRef.coord[1]) ** 2
+    )
   }
 }
