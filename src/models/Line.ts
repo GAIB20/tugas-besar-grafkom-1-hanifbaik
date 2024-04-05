@@ -3,7 +3,6 @@ import Vertex from '@/primitives/Vertex'
 import { matrix } from 'mathjs'
 
 export default class Line extends Model {
-  // TODO: create constraint
   private static count: number = 1
   private readonly vertexRef: Vertex
   public length: number = 0
@@ -52,13 +51,14 @@ export default class Line extends Model {
     y: number,
     canvas: HTMLCanvasElement
   ): void {
+    const newVertex = new Vertex([x, y])
     super.setVertexList(
-      [this.vertexRef, new Vertex([x, y])],
+      [this.vertexRef, newVertex],
       canvas.width,
       canvas.height
     )
     this.length = Math.sqrt(
-      (x - this.vertexRef.coord[0]) ** 2 + (y - this.vertexRef.coord[1]) ** 2
+      newVertex.getSqDistTo(this.vertexRef)
     )
   }
 }

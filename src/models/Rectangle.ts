@@ -3,7 +3,6 @@ import Vertex from '@/primitives/Vertex'
 import { matrix } from 'mathjs'
 
 export default class Rectangle extends Model {
-  // TODO: create constraint
   private static count: number = 1
   private vertexRef: Vertex
   public width: number = 0

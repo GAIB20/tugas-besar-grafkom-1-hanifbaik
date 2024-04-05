@@ -9,7 +9,6 @@ enum Orientation {
 }
 
 export default class Polygon extends Model {
-  // TODO: create constraint
   private static count: number = 1
   private polarRef: Vertex = new Vertex([0, 0])
 
