@@ -20,6 +20,9 @@ let cursorType: CursorType = CursorType.SELECT
 let isDrawing: boolean = false
 let isScaling: boolean = false
 let isMoving: boolean = false
+let isAnimating: boolean = false
+let isScaleReset: boolean = true
+let scaleAnimationNumber: number = 0.0
 const moveReference = new Vertex([0, 0])
 let selectedVertex: Vertex | undefined | null
 let selectedModel:
@@ -698,6 +701,19 @@ function onLineLengthInput (e: Event): void {
   }
 }
 
+function onAnimationButtonClick (): void {
+  isAnimating = !isAnimating
+  if (isAnimating) {
+    animationBtn.classList.add('bg-blue-200')
+    animationBtn.classList.remove('hover:bg-slate-200')
+    isScaleReset = false
+  } else {
+    animationBtn.classList.remove('bg-blue-200')
+    animationBtn.classList.add('hover:bg-slate-200')
+  }
+
+} 
+
 //* UTILITY FUNCTIONS
 function adjustColorPicker (): void {
   if (selectedVertex && colorPicker) {
@@ -861,6 +877,7 @@ const selectBtn = document.getElementById('select-btn') as HTMLButtonElement
 
 const saveBtn = document.getElementById('save-btn') as HTMLButtonElement
 const loadBtn = document.getElementById('load-btn') as HTMLButtonElement
+const animationBtn = document.getElementById('animation-btn') as HTMLButtonElement
 
 const lineLengthInput = document.getElementById(
   'line-length-input'
@@ -901,6 +918,8 @@ selectBtn.addEventListener('click', onButtonClick(CursorType.SELECT))
 saveBtn.addEventListener('click', onSaveButtonClick)
 loadBtn.addEventListener('click', onLoadButtonClick)
 
+animationBtn.addEventListener('click', onAnimationButtonClick)
+
 lineLengthInput.addEventListener('input', onLineLengthInput)
 squareSizeInput.addEventListener('input', onSquareSizeInput)
 rectangleWidthInput.addEventListener('input', onRectangleWidthInput)
@@ -912,10 +931,17 @@ canvas.addEventListener('mousemove', onCanvasMouseMove)
 canvas.addEventListener('click', onCanvasMouseClick)
 canvas.addEventListener('mouseup', onCanvasMouseUp)
 
+
 export const renderAll = (): void => {
   gl.clear(gl.COLOR_BUFFER_BIT)
-
   models.forEach((model) => {
+    if (isAnimating) {
+      model.scale(Math.sin(scaleAnimationNumber) * 1.1, Math.sin(scaleAnimationNumber) * 1.1, canvas)
+    } else {
+      if (!isScaleReset) {
+        model.resetScale(canvas)
+      }
+    }
     model.render(
       gl,
       posBuffer,
@@ -925,6 +951,15 @@ export const renderAll = (): void => {
       matUniLoc
     )
   })
+
+  scaleAnimationNumber += 0.02
+  if (scaleAnimationNumber > Math.PI * 1000) {
+    scaleAnimationNumber = 0.0
+  }
+
+  if (!isScaleReset && !isAnimating) {
+    isScaleReset = true
+  }
 
   clickPolygon.render(
     gl,

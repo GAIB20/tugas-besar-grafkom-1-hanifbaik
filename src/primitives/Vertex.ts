@@ -10,7 +10,7 @@ export default class Vertex {
       Math.random(),
       Math.random(),
       Math.random(),
-      Math.random() * 0.8 + 0.2
+      (Math.random() * 0.8 + 0.4 >= 1) ? 1 : Math.random() * 0.8 + 0.4
     ]
 
     if (vertexId) {
